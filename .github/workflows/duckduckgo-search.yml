@@ -1,0 +1,50 @@
+name: جستجو در DuckDuckGo
+
+on:
+  workflow_dispatch:
+    inputs:
+      query:
+        description: 'عبارت جستجو (مثال: mp4 video download)'
+        required: true
+        type: string
+      num_results:
+        description: 'تعداد نتایج (حداکثر 50)'
+        required: false
+        default: '15'
+        type: string
+
+jobs:
+  search:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: نصب Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: نصب کتابخانه DuckDuckGo
+        run: npm install @mudbill/duckduckgo-images-api axios
+      
+      - name: اجرای جستجو
+        run: node duckduckgo-search.js
+        env:
+          INPUT_QUERY: ${{ inputs.query }}
+          INPUT_NUM: ${{ inputs.num_results }}
+      
+      - name: ذخیره خروجی
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add duckduckgo-results/
+          git commit -m "افزودن نتایج جستجو از DuckDuckGo" || true
+          git push
+      
+      - name: آپلود نتایج
+        uses: actions/upload-artifact@v4
+        with:
+          name: duckduckgo-search-results
+          path: duckduckgo-results/
