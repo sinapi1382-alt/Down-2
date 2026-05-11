@@ -1,14 +1,14 @@
-name: مرورگر خودکار
+name: Browser Tool
 
 on:
   workflow_dispatch:
     inputs:
       url:
-        description: 'آدرس سایت مورد نظر'
+        description: website url
         required: true
         type: string
       action:
-        description: 'نوع عملیات'
+        description: action type
         required: true
         type: choice
         options:
@@ -23,36 +23,32 @@ jobs:
       contents: write
     
     steps:
-    - name: دریافت کدها
+    - name: checkout
       uses: actions/checkout@v4
     
-    - name: نصب Node.js
+    - name: setup node
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: 20
     
-    - name: نصب Puppeteer
-      run: |
-        npm install puppeteer
+    - name: install puppeteer
+      run: npm install puppeteer
     
-    - name: اجرای مرورگر
-      run: |
-        mkdir -p browser-output
-        
-        node script.js
+    - name: run browser
+      run: node script.js
       env:
         INPUT_URL: ${{ inputs.url }}
         INPUT_ACTION: ${{ inputs.action }}
     
-    - name: ذخیره خروجی
+    - name: save output
       run: |
-        git config user.name "github-actions[bot]"
+        git config user.name "github-actions"
         git config user.email "actions@github.com"
         git add browser-output/
-        git commit -m "افزودن خروجی مرورگر" || echo "تغییری نیست"
+        git commit -m "add browser output" || echo "no changes"
         git push
     
-    - name: آپلود خروجی
+    - name: upload
       uses: actions/upload-artifact@v4
       with:
         name: browser-output
