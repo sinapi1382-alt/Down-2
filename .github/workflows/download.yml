@@ -1,4 +1,4 @@
-name: دانلودر با تقسیم ۵۰ مگ و لیست ADM
+name: دانلودر با لینک صحیح برای ADM
 
 on:
   workflow_dispatch:
@@ -27,7 +27,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y aria2 zip
     
-    - name: دانلود و تقسیم به ۵۰ مگابایت
+    - name: دانلود و تقسیم
       run: |
         rm -rf downloads
         mkdir -p downloads
@@ -42,89 +42,62 @@ jobs:
         aria2c -x 16 -s 16 -o "$FILENAME" "$URL"
         
         if [ -f "$FILENAME" ]; then
-            SIZE=$(du -h "$FILENAME" | cut -f1)
             SIZE_MB=$(stat -c%s "$FILENAME" | awk '{print int($1/1024/1024)}')
             
-            echo "دانلود شد: $FILENAME - حجم کل: $SIZE"
-            
-            # پاک کردن فایل‌های قبلی
-            rm -f پارت* 2>/dev/null
-            
             if [ $SIZE_MB -gt 50 ]; then
-                echo "فایل بزرگتر از 50 مگابایت است. در حال تقسیم..."
-                
+                echo "تقسیم به بخش‌های 50 مگابایتی..."
                 if [ -n "$PASS" ]; then
                     zip -P "$PASS" -s 50m "پارت.zip" "$FILENAME"
                 else
                     zip -s 50m "پارت.zip" "$FILENAME"
                 fi
-                
                 rm "$FILENAME"
-                
-                # ساخت لیست لینک‌ها برای ADM
-                echo "========== لینک‌های قابل دانلود ==========" > لینک_ها.txt
-                echo "" >> لینک_ها.txt
-                echo "برای دانلود همزمان در ADM، این لینک‌ها را یکی یکی کپی کن:" >> لینک_ها.txt
-                echo "" >> لینک_ها.txt
-                
-                # گرفتن آدرس ریپازیتوری
-                REPO_URL="https://raw.githubusercontent.com/${{ github.repository }}/main/downloads"
-                
-                for PART in پارت.z* پارت.zip; do
-                    if [ -f "$PART" ]; then
-                        echo "$REPO_URL/$PART" >> لینک_ها.txt
-                    fi
-                done
-                
-                echo "" >> لینک_ها.txt
-                echo "========== راهنما ==========" >> لینک_ها.txt
-                echo "1. لینک‌های بالا را در ADM وارد کن" >> لینک_ها.txt
-                echo "2. همه پارت‌ها را دانلود کن" >> لینک_ها.txt
-                echo "3. فایل پارت.zip رو با ZArchiver باز کن" >> لینک_ها.txt
-                if [ -n "$PASS" ]; then
-                    echo "4. رمز: $PASS" >> لینک_ها.txt
-                fi
-                
             else
-                # فایل کوچک
                 if [ -n "$PASS" ]; then
                     zip -P "$PASS" "download.zip" "$FILENAME"
                 else
                     zip "download.zip" "$FILENAME"
                 fi
                 rm "$FILENAME"
-                
-                REPO_URL="https://raw.githubusercontent.com/${{ github.repository }}/main/downloads"
-                echo "لینک دانلود: $REPO_URL/download.zip" > لینک_ها.txt
             fi
-        else
-            echo "خطا در دانلود!"
-            exit 1
         fi
-        
-        # ساخت فایل لیست کامل
-        echo "------------------------" > list.txt
-        echo "فایل‌های موجود در پوشه:" >> list.txt
-        ls -lh >> list.txt
-        echo "" >> list.txt
-        echo "لینک اصلی: $URL" >> list.txt
         
         cd ..
         
         git config user.name "github-actions[bot]"
         git config user.email "actions@github.com"
         git add downloads/
-        git commit -m "افزودن فایل‌های دانلود شده" || echo "تغییری نیست"
+        git commit -m "افزودن فایل" || echo "ok"
         git push
         
-        echo "================================"
-        echo "✅ دانلود و تقسیم کامل شد!"
-        echo "================================"
-        echo "لینک دانلود پارت‌ها در فایل: downloads/لینک_ها.txt"
-        echo "برای کپی کردن لینک‌ها در ADM، آن فایل را باز کن"
+        # ساخت لینک صحیح برای ADM
+        cd downloads
+        echo "========== لینک‌های قابل دانلود در ADM ==========" > لینک_ها.txt
+        echo "" >> لینک_ها.txt
+        echo "این لینک‌ها را در ADM وارد کن:" >> لینک_ها.txt
+        echo "" >> لینک_ها.txt
+        
+        for FILE in *; do
+            if [ -f "$FILE" ]; then
+                echo "https://github.com/${{ github.repository }}/raw/main/downloads/$FILE" >> لینک_ها.txt
+            fi
+        done
+        
+        echo "" >> لینک_ها.txt
+        echo "========== راهنما ==========" >> لینک_ها.txt
+        echo "1. هر لینک رو جداگانه در ADM وارد کن" >> لینک_ها.txt
+        echo "2. همه فایل‌ها رو دانلود کن" >> لینک_ها.txt
+        if [ -n "$PASS" ]; then
+            echo "3. رمز: $PASS" >> لینک_ها.txt
+        fi
+        
+        git add لینک_ها.txt
+        git commit -m "اضافه کردن لینک‌ها" || echo "ok"
+        git push
+        cd ..
     
     - name: آپلود
       uses: actions/upload-artifact@v4
       with:
-        name: فایل-های-تقسیم-شده
+        name: فایل-ها
         path: downloads/
