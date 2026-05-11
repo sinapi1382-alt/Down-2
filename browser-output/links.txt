@@ -1,12 +1,15 @@
 لیست لینک‌های استخراج شده
 ========================
-تاریخ: ۱۴۰۵/۲/۲۱, ۱۹:۴۴:۳۱
-لینک: https://m1.sosalkino.app/search/Kyle/
+تاریخ: ۱۴۰۵/۲/۲۱, ۱۹:۴۸:۲۳
+لینک اصلی: https://m1.sosalkino.app/search/Kyle/
 
-ویدیوها:
+فایل HTML کامل سایت: site.html
+اسکرین شات: screenshot.png
+
+ویدیوها (1):
 https://cdn-fs.7kprtners.com/4/23/110/210/2954/jd110/index.html
 
-عکس‌ها:
+عکس‌ها (12):
 https://wvw.sosalkino.guru/static/images/logo.png
 https://wvw.sosalkino.guru/static/images/logo-mobil.png
 https://wvw.sosalkino.guru/contents/models/497/s1_Kyle%20Mason.jpg
