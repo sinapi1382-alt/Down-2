@@ -1,0 +1,17 @@
+========== لینک‌های قابل دانلود در ADM ==========
+
+برای دانلود همزمان، این لینک‌ها را در ADM وارد کن:
+
+https://raw.githubusercontent.com/sinapi1382-alt/Down-2/main/video-downloads/video.z01
+https://raw.githubusercontent.com/sinapi1382-alt/Down-2/main/video-downloads/video.z02
+https://raw.githubusercontent.com/sinapi1382-alt/Down-2/main/video-downloads/video.z03
+https://raw.githubusercontent.com/sinapi1382-alt/Down-2/main/video-downloads/video.z04
+https://raw.githubusercontent.com/sinapi1382-alt/Down-2/main/video-downloads/video.z05
+https://raw.githubusercontent.com/sinapi1382-alt/Down-2/main/video-downloads/video.z06
+https://raw.githubusercontent.com/sinapi1382-alt/Down-2/main/video-downloads/video.z07
+https://raw.githubusercontent.com/sinapi1382-alt/Down-2/main/video-downloads/video.zip
+
+========== راهنما ==========
+1. لینک‌ها را در ADM وارد کن و همزمان دانلود کن
+2. همه فایل‌ها را در یک پوشه جمع کن
+3. فایل video.zip را با ZArchiver باز کن
