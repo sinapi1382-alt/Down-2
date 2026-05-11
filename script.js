@@ -2,13 +2,11 @@ const puppeteer = require('puppeteer');
 const fs = require('fs');
 
 (async () => {
-  // پاک کردن کامل پوشه قبلی
+  // پاک کردن پوشه قبلی
   if (fs.existsSync('browser-output')) {
     fs.rmSync('browser-output', { recursive: true, force: true });
     console.log('🗑️ پوشه قبلی پاک شد');
   }
-  
-  // ساخت پوشه جدید
   fs.mkdirSync('browser-output', { recursive: true });
   
   const url = process.env.INPUT_URL;
@@ -34,6 +32,7 @@ const fs = require('fs');
   let videos = [];
   let images = [];
   
+  // اسکرین شات
   if (action === 'screenshot' || action === 'both') {
     console.log(`3. گرفتن اسکرین شات...`);
     await page.screenshot({ 
@@ -43,8 +42,15 @@ const fs = require('fs');
     console.log(`✅ اسکرین شات ذخیره شد`);
   }
   
+  // ذخیره کامل HTML سایت
+  console.log(`4. ذخیره کامل HTML سایت...`);
+  const htmlContent = await page.content();
+  fs.writeFileSync('browser-output/site.html', htmlContent);
+  console.log(`✅ HTML کامل سایت ذخیره شد (${(htmlContent.length/1024).toFixed(1)} KB)`);
+  
+  // استخراج لینک‌های مدیا
   if (action === 'media' || action === 'both') {
-    console.log(`4. استخراج لینک‌های مدیا...`);
+    console.log(`5. استخراج لینک‌های مدیا...`);
     
     videos = await page.evaluate(() => {
       const result = [];
@@ -75,7 +81,8 @@ const fs = require('fs');
   
   await browser.close();
   
-  console.log(`5. ساخت فایل HTML...`);
+  // ساخت فایل HTML نمایشی (برای مشاهده لینک‌ها و اطلاعات)
+  console.log(`6. ساخت فایل نمایانگر...`);
   
   let html = `<!DOCTYPE html>
 <html dir="rtl" lang="fa">
@@ -85,19 +92,21 @@ const fs = require('fs');
     <title>خروجی مرورگر - ${url}</title>
     <style>
         body{font-family:Tahoma;background:#667eea;padding:20px;margin:0}
-        .container{max-width:900px;margin:0 auto}
+        .container{max-width:1000px;margin:0 auto}
         .card{background:white;border-radius:20px;padding:25px;margin-bottom:20px;box-shadow:0 10px 40px rgba(0,0,0,0.2)}
         h1{color:#333;text-align:center}
+        h2{color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px}
         .info{background:#f0f0f0;padding:12px;border-radius:10px;margin-bottom:20px;word-break:break-all}
-        .section{margin-bottom:25px}
-        .section h3{color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px}
         .link-list{list-style:none;padding:0}
         .link-list li{background:#f8f9fa;margin:8px 0;padding:12px;border-radius:8px;word-break:break-all}
         .link-list a{color:#667eea;text-decoration:none}
         .screenshot-img{max-width:100%;border-radius:10px;border:1px solid #ddd}
         .badge{background:#28a745;color:white;padding:2px 8px;border-radius:20px;font-size:12px;margin-right:8px}
-        .footer{text-align:center;color:rgba(255,255,255,0.8);font-size:12px}
-        .error{color:#dc3545;background:#f8d7da;padding:10px;border-radius:8px}
+        .btn{display:inline-block;background:#667eea;color:white;padding:10px 20px;border-radius:10px;text-decoration:none;margin:10px 5px}
+        .btn:hover{background:#764ba2}
+        .footer{text-align:center;color:rgba(255,255,255,0.8);font-size:12px;margin-top:20px}
+        .iframe-container{background:#f0f0f0;padding:10px;border-radius:10px;margin-top:10px}
+        iframe{width:100%;height:500px;border:none;border-radius:8px}
     </style>
 </head>
 <body>
@@ -108,47 +117,64 @@ const fs = require('fs');
                 <strong>📅 تاریخ:</strong> ${date}<br>
                 <strong>🔗 لینک اصلی:</strong> <a href="${url}" target="_blank">${url}</a><br>
                 <strong>📋 عملیات:</strong> ${action}
+            </div>
+            
+            <div style="text-align:center">
+                <a href="site.html" class="btn" target="_blank">🌍 مشاهده HTML کامل سایت</a>
+                <a href="screenshot.png" class="btn" target="_blank">📸 مشاهده اسکرین شات</a>
+                <a href="links.txt" class="btn" target="_blank">📋 دانلود لینک‌ها</a>
+            </div>
+            
+            <div class="iframe-container">
+                <h3>📄 پیش‌نمایش HTML سایت:</h3>
+                <iframe src="site.html"></iframe>
             </div>`;
   
   if (action === 'screenshot' || action === 'both') {
-    html += `<div class="section"><h3>📸 اسکرین شات</h3><img src="screenshot.png" class="screenshot-img"></div>`;
+    html += `<div><h3>📸 اسکرین شات</h3><img src="screenshot.png" class="screenshot-img"></div>`;
   }
   
   if (action === 'media' || action === 'both') {
     if (videos.length > 0) {
-      html += `<div class="section"><h3>🎬 ویدیوها <span class="badge">${videos.length}</span></h3><ul class="link-list">`;
+      html += `<div><h3>🎬 ویدیوها <span class="badge">${videos.length}</span></h3><ul class="link-list">`;
       for (const v of videos) html += `<li><a href="${v}" target="_blank">📹 ${v}</a></li>`;
       html += `</ul></div>`;
     }
     
     if (images.length > 0) {
-      html += `<div class="section"><h3>🖼️ عکس‌ها <span class="badge">${images.length}</span></h3><ul class="link-list">`;
-      for (const img of images) html += `<li><a href="${img}" target="_blank">🖼️ ${img}</a></li>`;
+      html += `<div><h3>🖼️ عکس‌ها <span class="badge">${images.length}</span></h3><ul class="link-list">`;
+      for (const img of images.slice(0, 20)) html += `<li><a href="${img}" target="_blank">🖼️ ${img}</a></li>`;
       html += `</ul></div>`;
-    }
-    
-    if (videos.length === 0 && images.length === 0) {
-      html += `<div class="section"><div class="error">هیچ لینک ویدیو یا عکسی پیدا نشد</div></div>`;
     }
   }
   
-  html += `<div class="footer">ساخته شده با ❤️ | ${date}</div></div></div></body></html>`;
+  html += `<div class="footer">ساخته شده با ❤️ | این فایل شامل اسکرین شات، HTML کامل سایت و لینک‌های استخراج شده است</div></div></div></body></html>`;
   
   fs.writeFileSync('browser-output/index.html', html);
   
+  // فایل متنی لینک‌ها
   let textContent = `لیست لینک‌های استخراج شده\n`;
   textContent += `========================\n`;
-  textContent += `تاریخ: ${date}\nلینک: ${url}\n\n`;
+  textContent += `تاریخ: ${date}\n`;
+  textContent += `لینک اصلی: ${url}\n\n`;
+  textContent += `فایل HTML کامل سایت: site.html\n`;
+  textContent += `اسکرین شات: screenshot.png\n\n`;
+  
   if (videos.length > 0) {
-    textContent += `ویدیوها:\n`;
+    textContent += `ویدیوها (${videos.length}):\n`;
     for (const v of videos) textContent += `${v}\n`;
     textContent += `\n`;
   }
   if (images.length > 0) {
-    textContent += `عکس‌ها:\n`;
+    textContent += `عکس‌ها (${images.length}):\n`;
     for (const img of images) textContent += `${img}\n`;
   }
+  
   fs.writeFileSync('browser-output/links.txt', textContent);
   
-  console.log(`✅ خروجی جدید در پوشه browser-output ذخیره شد`);
+  console.log(`✅ خروجی نهایی ذخیره شد:`);
+  console.log(`   - site.html : کد HTML کامل سایت (${(htmlContent.length/1024).toFixed(1)} KB)`);
+  console.log(`   - screenshot.png : اسکرین شات`);
+  console.log(`   - index.html : صفحه نمایانگر`);
+  console.log(`   - links.txt : لیست لینک‌ها`);
 })();
