@@ -1,0 +1,313 @@
+name: مرورگر خودکار (اسکرین شات و استخراج مدیا)
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'آدرس سایت مورد نظر'
+        required: true
+        type: string
+      action:
+        description: 'نوع عملیات'
+        required: true
+        type: choice
+        options:
+          - screenshot
+          - media
+          - both
+        default: both
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - name: دریافت کدها
+      uses: actions/checkout@v4
+    
+    - name: نصب Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    
+    - name: نصب Puppeteer
+      run: |
+        npm install puppeteer
+        npx puppeteer browsers install chrome
+    
+    - name: نصب فونت فارسی
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y fonts-noto-cjk
+    
+    - name: اجرای مرورگر
+      run: |
+        mkdir -p browser-output
+        
+        node << 'EOF'
+        const puppeteer = require('puppeteer');
+        const fs = require('fs');
+        
+        (async () => {
+          const url = process.env.INPUT_URL;
+          const action = process.env.INPUT_ACTION;
+          const date = new Date().toLocaleString('fa-IR');
+          
+          console.log('🚀 راه‌اندازی مرورگر...');
+          const browser = await puppeteer.launch({
+            headless: true,
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+          });
+          
+          const page = await browser.newPage();
+          await page.setViewport({ width: 1280, height: 720 });
+          
+          console.log('🕸️ در حال رفتن به: ' + url);
+          await page.goto(url, { 
+            waitUntil: 'networkidle2',
+            timeout: 30000 
+          });
+          
+          let videos = [];
+          let images = [];
+          
+          // اسکرین شات
+          if (action === 'screenshot' || action === 'both') {
+            await page.screenshot({ 
+              path: 'browser-output/screenshot.png', 
+              fullPage: true 
+            });
+            console.log('✅ اسکرین شات ذخیره شد');
+          }
+          
+          // استخراج مدیا
+          if (action === 'media' || action === 'both') {
+            const media = await page.evaluate(() => {
+              const vids = [];
+              const imgs = [];
+              
+              document.querySelectorAll('video, source, iframe[src*="youtube"], iframe[src*="aparat"], iframe[src*="youtu.be"]').forEach(el => {
+                const src = el.src || el.getAttribute('src');
+                if (src && src.startsWith('http')) vids.push(src);
+              });
+              
+              document.querySelectorAll('img').forEach(el => {
+                const src = el.src;
+                if (src && src.startsWith('http') && 
+                    !src.includes('data:image') && 
+                    src.length < 500) {
+                  imgs.push(src);
+                }
+              });
+              
+              return { videos: [...new Set(vids)], images: [...new Set(imgs)] };
+            });
+            
+            videos = media.videos;
+            images = media.images;
+            
+            console.log(`✅ ${videos.length} ویدیو و ${images.length} عکس پیدا شد`);
+          }
+          
+          await browser.close();
+          
+          // ساخت فایل HTML
+          let htmlContent = `<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>خروجی مرورگر - استخراج مدیا</title>
+    <style>
+        body {
+            font-family: 'Tahoma', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .info {
+            background: #f0f0f0;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            word-break: break-all;
+        }
+        .section {
+            margin-bottom: 25px;
+        }
+        .section h3 {
+            color: #667eea;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+        }
+        .link-list {
+            list-style: none;
+            padding: 0;
+        }
+        .link-list li {
+            background: #f8f9fa;
+            margin: 8px 0;
+            padding: 12px;
+            border-radius: 8px;
+            word-break: break-all;
+        }
+        .link-list a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .link-list a:hover {
+            text-decoration: underline;
+        }
+        .thumbnail {
+            max-width: 150px;
+            border-radius: 8px;
+            margin: 5px;
+        }
+        .screenshot-img {
+            max-width: 100%;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+        }
+        .badge {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-right: 8px;
+        }
+        hr {
+            margin: 20px 0;
+            border: none;
+            border-top: 1px solid #ddd;
+        }
+        .footer {
+            text-align: center;
+            color: rgba(255,255,255,0.8);
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>🌐 خروجی مرورگر خودکار</h1>
+            <div class="info">
+                <strong>📅 تاریخ:</strong> ${date}<br>
+                <strong>🔗 لینک اصلی:</strong> <a href="${url}" target="_blank">${url}</a><br>
+                <strong>📋 عملیات:</strong> ${action}
+            </div>`;
+          
+          if ((action === 'screenshot' || action === 'both') && fs.existsSync('browser-output/screenshot.png')) {
+            htmlContent += `
+            <div class="section">
+                <h3>📸 اسکرین شات</h3>
+                <img src="screenshot.png" alt="Screenshot" class="screenshot-img">
+            </div>`;
+          }
+          
+          if (action === 'media' || action === 'both') {
+            if (videos.length > 0) {
+              htmlContent += `
+            <div class="section">
+                <h3>🎬 لینک‌های ویدیو <span class="badge">${videos.length}</span></h3>
+                <ul class="link-list">`;
+              videos.forEach(v => {
+                htmlContent += `<li><a href="${v}" target="_blank">📹 ${v}</a></li>`;
+              });
+              htmlContent += `
+                </ul>
+            </div>`;
+            }
+            
+            if (images.length > 0) {
+              htmlContent += `
+            <div class="section">
+                <h3>🖼️ لینک‌های عکس <span class="badge">${images.length}</span></h3>
+                <div>`;
+              images.forEach(img => {
+                htmlContent += `<a href="${img}" target="_blank"><img src="${img}" class="thumbnail" onerror="this.style.display='none'"></a> `;
+              });
+              htmlContent += `
+                </div>
+                <ul class="link-list">`;
+              images.forEach(img => {
+                htmlContent += `<li><a href="${img}" target="_blank">🖼️ ${img}</a></li>`;
+              });
+              htmlContent += `
+                </ul>
+            </div>`;
+            }
+            
+            if (videos.length === 0 && images.length === 0) {
+              htmlContent += `
+            <div class="section">
+                <h3>⚠️ نتیجه</h3>
+                <p>هیچ لینک ویدیو یا عکسی در این صفحه پیدا نشد.</p>
+                <p>احتمالاً محتوا به صورت داینامیک بارگذاری میشه یا نیاز به اسکرول داره.</p>
+            </div>`;
+            }
+          }
+          
+          htmlContent += `
+            <hr>
+            <div class="section">
+                <h3>💡 نکات</h3>
+                <ul>
+                    <li>برای دانلود ویدیو: لینک رو در ADM یا IDM وارد کن</li>
+                    <li>برای دانلود عکس: روی عکس کلیک کن و Save رو بزن</li>
+                    <li>این لینک‌ها مستقیماً از صفحه استخراج شدن</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer">
+            ساخته شده با ❤️ توسط مرورگر خودکار | ${date}
+        </div>
+    </div>
+</body>
+</html>`;
+          
+          fs.writeFileSync('browser-output/index.html', htmlContent);
+          console.log('✅ فایل HTML با لینک‌های قابل کلیک ساخته شد');
+          
+        })();
+        EOF
+      env:
+        INPUT_URL: ${{ inputs.url }}
+        INPUT_ACTION: ${{ inputs.action }}
+    
+    - name: ذخیره خروجی در ریپازیتوری
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "actions@github.com"
+        git add browser-output/
+        git commit -m "افزودن خروجی مرورگر (HTML)" || echo "تغییری نیست"
+        git push
+    
+    - name: آپلود خروجی
+      uses: actions/upload-artifact@v4
+      with:
+        name: browser-output
+        path: browser-output/
