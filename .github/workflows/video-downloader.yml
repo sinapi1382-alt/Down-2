@@ -1,0 +1,190 @@
+name: دانلودر ویدیو (Video Downloader)
+
+on:
+  workflow_dispatch:
+    inputs:
+      urls:
+        description: 'لینک مستقیم فایل ویدیو (get_file یا mp4)'
+        required: true
+        type: string
+      referer:
+        description: 'لینک صفحه اصلی ویدیو (Referer) - برای سایت‌های محافظت شده'
+        required: false
+        type: string
+      password:
+        description: 'رمز فایل زیپ (اختیاری)'
+        required: false
+        type: string
+
+jobs:
+  download:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - name: دریافت کدها
+      uses: actions/checkout@v4
+    
+    - name: نصب ابزارها
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y aria2 zip
+    
+    - name: دانلود ویدیو با Referer (در صورت نیاز)
+      run: |
+        # پاک کردن پوشه قبلی
+        rm -rf video-downloads
+        mkdir -p video-downloads
+        cd video-downloads
+        
+        URL="${{ inputs.urls }}"
+        REFERER="${{ inputs.referer }}"
+        PASS="${{ inputs.password }}"
+        
+        echo "========================================="
+        echo "🎬 شروع دانلود ویدیو"
+        echo "========================================="
+        echo "لینک: $URL"
+        if [ -n "$REFERER" ]; then
+          echo "Referer: $REFERER"
+        fi
+        
+        # دریافت نام فایل از لینک
+        FILENAME=$(basename "$URL" | cut -d '?' -f1 | cut -d '#' -f1)
+        if [ -z "$FILENAME" ] || [ "$FILENAME" = "$URL" ]; then
+          FILENAME="video_$(date +%s).mp4"
+        fi
+        
+        # دانلود با یا بدون Referer
+        if [ -n "$REFERER" ]; then
+          aria2c -x 16 -s 16 -k 1M \
+                 --referer="$REFERER" \
+                 --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
+                 --check-certificate=false \
+                 --console-log-level=error \
+                 -o "$FILENAME" \
+                 "$URL"
+        else
+          aria2c -x 16 -s 16 -k 1M \
+                 --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
+                 --console-log-level=error \
+                 -o "$FILENAME" \
+                 "$URL"
+        fi
+        
+        # بررسی موفقیت دانلود
+        if [ ! -f "$FILENAME" ] || [ ! -s "$FILENAME" ]; then
+          echo "❌ خطا در دانلود ویدیو!"
+          exit 1
+        fi
+        
+        SIZE=$(du -h "$FILENAME" | cut -f1)
+        SIZE_MB=$(stat -c%s "$FILENAME" | awk '{print int($1/1024/1024)}')
+        
+        echo "✅ دانلود شد: $FILENAME (حجم: $SIZE)"
+        
+        # تقسیم به بخش‌های 50 مگابایتی اگه فایل بزرگ بود
+        if [ $SIZE_MB -gt 50 ]; then
+          echo "📦 فایل بزرگتر از 50 مگابایت - در حال تقسیم..."
+          if [ -n "$PASS" ]; then
+            zip -P "$PASS" -s 50m "video.zip" "$FILENAME"
+            echo "✅ تقسیم شد: video.z01, video.z02, video.zip (با رمز)"
+          else
+            zip -s 50m "video.zip" "$FILENAME"
+            echo "✅ تقسیم شد: video.z01, video.z02, video.zip"
+          fi
+          rm "$FILENAME"
+          
+          # ساخت فایل راهنما
+          echo "نحوه وصل کردن فایل‌های تقسیم شده:" > راهنما.txt
+          echo "--------------------------------" >> راهنما.txt
+          echo "1. همه فایل‌های video.z01, video.z02, video.zip را در یک پوشه جمع کن" >> راهنما.txt
+          echo "2. با برنامه ZArchiver (اندروید) یا WinRAR فایل video.zip را باز کن" >> راهنما.txt
+          echo "3. فایل ویدیو به دستت میرسه" >> راهنما.txt
+          if [ -n "$PASS" ]; then
+            echo "4. رمز: $PASS" >> راهنما.txt
+          fi
+        else
+          # فایل کوچک - فقط زیپ
+          if [ -n "$PASS" ]; then
+            zip -P "$PASS" "video.zip" "$FILENAME"
+            echo "✅ زیپ شد: video.zip (با رمز)"
+          else
+            zip "video.zip" "$FILENAME"
+            echo "✅ زیپ شد: video.zip"
+          fi
+          rm "$FILENAME"
+        fi
+        
+        cd ..
+        
+        # ساخت فایل لیست
+        cd video-downloads
+        echo "=========================================" > لیست_ویدیو.txt
+        echo "لیست فایل‌های دانلود شده" >> لیست_ویدیو.txt
+        echo "=========================================" >> لیست_ویدیو.txt
+        echo "" >> لیست_ویدیو.txt
+        echo "تاریخ: $(date '+%Y-%m-%d %H:%M:%S')" >> لیست_ویدیو.txt
+        echo "لینک اصلی: $URL" >> لیست_ویدیو.txt
+        if [ -n "$REFERER" ]; then
+          echo "Referer: $REFERER" >> لیست_ویدیو.txt
+        fi
+        echo "" >> لیست_ویدیو.txt
+        echo "فایل‌های موجود:" >> لیست_ویدیو.txt
+        echo "----------------------------------------" >> لیست_ویدیو.txt
+        ls -lh >> لیست_ویدیو.txt
+        echo "" >> لیست_ویدیو.txt
+        if [ -n "$PASS" ]; then
+          echo "رمز فایل: $PASS" >> لیست_ویدیو.txt
+        else
+          echo "رمز فایل: بدون رمز" >> لیست_ویدیو.txt
+        fi
+        echo "حجم کل: $(du -sh . | cut -f1)" >> لیست_ویدیو.txt
+        echo "=========================================" >> لیست_ویدیو.txt
+        
+        # ساخت فایل لینک‌ها برای ADM
+        echo "========== لینک‌های قابل دانلود در ADM ==========" > لینک_ها.txt
+        echo "" >> لینک_ها.txt
+        echo "برای دانلود همزمان، این لینک‌ها را در ADM وارد کن:" >> لینک_ها.txt
+        echo "" >> لینک_ها.txt
+        
+        REPO_URL="https://raw.githubusercontent.com/${{ github.repository }}/main/video-downloads"
+        for FILE in *; do
+          if [ -f "$FILE" ] && [ "$FILE" != "لیست_ویدیو.txt" ] && [ "$FILE" != "لینک_ها.txt" ] && [ "$FILE" != "راهنما.txt" ]; then
+            echo "$REPO_URL/$FILE" >> لینک_ها.txt
+          fi
+        done
+        
+        echo "" >> لینک_ها.txt
+        echo "========== راهنما ==========" >> لینک_ها.txt
+        echo "1. لینک‌ها را در ADM وارد کن و همزمان دانلود کن" >> لینک_ها.txt
+        echo "2. همه فایل‌ها را در یک پوشه جمع کن" >> لینک_ها.txt
+        echo "3. فایل video.zip را با ZArchiver باز کن" >> لینک_ها.txt
+        if [ -n "$PASS" ]; then
+          echo "4. رمز: $PASS" >> لینک_ها.txt
+        fi
+        
+        cat لیست_ویدیو.txt
+        cd ..
+        
+        # ذخیره در ریپازیتوری
+        git config user.name "github-actions[bot]"
+        git config user.email "actions@github.com"
+        git add video-downloads/
+        git commit -m "🎬 افزودن ویدیو دانلود شده" || echo "تغییری نیست"
+        git push
+        
+        echo ""
+        echo "========================================="
+        echo "✅ دانلود ویدیو کامل شد!"
+        echo "========================================="
+        echo "📂 پوشه: video-downloads"
+        ls -la video-downloads/
+        echo "========================================="
+    
+    - name: آپلود خروجی
+      uses: actions/upload-artifact@v4
+      with:
+        name: ویدیو-دانلود-شده
+        path: video-downloads/
