@@ -2,14 +2,19 @@ const puppeteer = require('puppeteer');
 const fs = require('fs');
 
 (async () => {
+  // ============================================
+  // پاک کردن پوشه قبلی
+  // ============================================
+  if (fs.existsSync('duckduckgo-results')) {
+    fs.rmSync('duckduckgo-results', { recursive: true, force: true });
+    console.log('🗑️ پوشه قبلی duckduckgo-results پاک شد');
+  }
+  
   const query = process.env.INPUT_QUERY;
   const numResults = parseInt(process.env.INPUT_NUM) || 15;
-  const searchType = process.env.INPUT_TYPE || 'all'; // all, images, videos
+  const searchType = process.env.INPUT_TYPE || 'all';
   
-  // پاک کردن پوشه قبلی
-  if (fs.existsSync('duckduckgo-results')) {
-    fs.rmSync('duckduckgo-results', { recursive: true });
-  }
+  // ساخت پوشه جدید
   fs.mkdirSync('duckduckgo-results');
   
   console.log(`🦆 DuckDuckGo - جستجو: "${query}"`);
@@ -58,7 +63,6 @@ const fs = require('fs');
   let links = [];
   
   if (searchType === 'images') {
-    // استخراج لینک عکس‌ها
     links = await page.evaluate(() => {
       const results = [];
       document.querySelectorAll('img[data-src], img[src]').forEach(img => {
@@ -73,7 +77,6 @@ const fs = require('fs');
     });
   } 
   else if (searchType === 'videos') {
-    // استخراج لینک ویدیوها
     links = await page.evaluate(() => {
       const results = [];
       document.querySelectorAll('a[href*=".mp4"], a[href*=".mkv"], a[href*=".avi"], a[href*="youtube.com/watch"], a[href*="aparat.com/v"]').forEach(a => {
@@ -84,7 +87,6 @@ const fs = require('fs');
     });
   }
   else {
-    // استخراج لینک‌های معمولی (all)
     links = await page.evaluate(() => {
       const results = [];
       document.querySelectorAll('a[data-testid="result-title-a"], a.result__a, a.js-result-extras-url').forEach(a => {
@@ -101,37 +103,13 @@ const fs = require('fs');
   
   await browser.close();
   
-  // محدود کردن تعداد نتایج
   const finalLinks = links.slice(0, numResults);
   
-  // ============================================
-  // ذخیره خروجی‌ها
-  // ============================================
-  
-  // 1. فایل لینک‌ها
+  // ذخیره لینک‌ها
   fs.writeFileSync('duckduckgo-results/links.txt', finalLinks.join('\n'));
   
-  // 2. فایل خروجی کامل
+  // فایل HTML نمایشی
   let typeName = { all: 'همه موارد', images: 'عکس‌ها', videos: 'ویدیوها' };
-  let output = `🦆 نتایج جستجو در DuckDuckGo\n`;
-  output += `==========================================\n`;
-  output += `عبارت جستجو: ${query}\n`;
-  output += `نوع جستجو: ${typeName[searchType] || searchType}\n`;
-  output += `تعداد نتایج: ${finalLinks.length}\n`;
-  output += `تاریخ: ${new Date().toLocaleString('fa-IR')}\n`;
-  output += `==========================================\n\n`;
-  
-  if (finalLinks.length > 0) {
-    output += `📋 لینک‌های پیدا شده:\n\n`;
-    finalLinks.forEach((link, i) => {
-      output += `${i+1}. ${link}\n`;
-    });
-  } else {
-    output += `❌ هیچ نتیجه‌ای پیدا نشد.\n`;
-  }
-  fs.writeFileSync('duckduckgo-results/output.txt', output);
-  
-  // 3. فایل HTML نمایشی
   let htmlLinks = `<!DOCTYPE html>
 <html dir="rtl" lang="fa">
 <head>
@@ -147,18 +125,15 @@ const fs = require('fs');
         .link-list li{background:#f8f9fa;margin:8px 0;padding:12px;border-radius:8px;word-break:break-all}
         .link-list a{color:#667eea;text-decoration:none}
         img{max-width:100%;border-radius:10px;margin:10px 0}
-        .type-info{background:#e9ecef;padding:10px;border-radius:10px;margin:15px 0}
     </style>
 </head>
 <body>
     <div class="container">
         <div class="card">
             <h1>🦆 نتایج جستجو در DuckDuckGo</h1>
-            <div class="type-info">
-                <strong>🔍 عبارت:</strong> ${query}<br>
-                <strong>📂 نوع:</strong> ${typeName[searchType] || searchType} <span class="badge">${finalLinks.length} نتیجه</span><br>
-                <strong>📅 تاریخ:</strong> ${new Date().toLocaleString('fa-IR')}
-            </div>
+            <p><strong>عبارت جستجو:</strong> ${query}</p>
+            <p><strong>نوع:</strong> ${typeName[searchType]} <span class="badge">${finalLinks.length} نتیجه</span></p>
+            <p><strong>تاریخ:</strong> ${new Date().toLocaleString('fa-IR')}</p>
             <img src="screenshot.png" style="max-width:100%;border:1px solid #ddd;border-radius:10px">
             <hr>
             <h2>📋 لینک‌های پیدا شده</h2>
@@ -168,12 +143,7 @@ const fs = require('fs');
     htmlLinks += `<li><a href="${link}" target="_blank">🔗 ${link}</a></li>`;
   });
   
-  htmlLinks += `
-            </ul>
-        </div>
-    </div>
-</body>
-</html>`;
+  htmlLinks += `</ul></div></div></body></html>`;
   
   fs.writeFileSync('duckduckgo-results/index.html', htmlLinks);
   
@@ -181,7 +151,6 @@ const fs = require('fs');
   console.log(`📁 پوشه: duckduckgo-results/`);
   console.log(`📄 فایل‌ها:`);
   console.log(`   - screenshot.png : اسکرین‌شات`);
-  console.log(`   - index.html : صفحه نمایش لینک‌ها (این رو باز کن)`);
-  console.log(`   - links.txt : ${finalLinks.length} لینک (یکی در هر خط)`);
-  console.log(`   - output.txt : خروجی خوانا`);
+  console.log(`   - index.html : صفحه نمایش لینک‌ها`);
+  console.log(`   - links.txt : ${finalLinks.length} لینک`);
 })();
