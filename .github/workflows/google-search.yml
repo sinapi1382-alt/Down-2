@@ -1,0 +1,48 @@
+name: جستجوی گوگل (Google Search)
+
+on:
+  workflow_dispatch:
+    inputs:
+      query:
+        description: 'عبارت جستجو (مثال: mp4 video download)'
+        required: true
+        type: string
+      num_results:
+        description: 'تعداد نتایج (حداکثر 50)'
+        required: false
+        default: '10'
+        type: string
+
+jobs:
+  search:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: نصب puppeteer
+        run: npm install puppeteer
+      
+      - name: جستجو در گوگل
+        run: node google-search.js
+        env:
+          INPUT_QUERY: ${{ inputs.query }}
+          INPUT_NUM: ${{ inputs.num_results }}
+      
+      - name: ذخیره خروجی
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add google-results/
+          git commit -m "افزودن نتایج جستجو" || true
+          git push
+      
+      - name: آپلود نتایج
+        uses: actions/upload-artifact@v4
+        with:
+          name: google-search-results
+          path: google-results/
