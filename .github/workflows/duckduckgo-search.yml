@@ -4,11 +4,20 @@ on:
   workflow_dispatch:
     inputs:
       query:
-        description: 'عبارت جستجو'
+        description: 'عبارت جستجو (فارسی یا انگلیسی)'
         required: true
         type: string
+      search_type:
+        description: 'نوع جستجو'
+        required: true
+        type: choice
+        options:
+          - all
+          - images
+          - videos
+        default: all
       num_results:
-        description: 'تعداد نتایج'
+        description: 'تعداد نتایج (حداکثر 50)'
         required: false
         default: '15'
         type: string
@@ -33,6 +42,7 @@ jobs:
         run: node duckduckgo-search.js
         env:
           INPUT_QUERY: ${{ inputs.query }}
+          INPUT_TYPE: ${{ inputs.search_type }}
           INPUT_NUM: ${{ inputs.num_results }}
       
       - name: ذخیره خروجی
