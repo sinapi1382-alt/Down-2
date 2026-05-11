@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       query:
-        description: 'عبارت جستجو (مثال: mp4 video download)'
+        description: 'عبارت جستجو'
         required: true
         type: string
       num_results:
-        description: 'تعداد نتایج (حداکثر 50)'
+        description: 'تعداد نتایج'
         required: false
         default: '15'
         type: string
@@ -26,8 +26,8 @@ jobs:
         with:
           node-version: '20'
       
-      - name: نصب کتابخانه DuckDuckGo
-        run: npm install @mudbill/duckduckgo-images-api axios
+      - name: نصب Puppeteer
+        run: npm install puppeteer
       
       - name: اجرای جستجو
         run: node duckduckgo-search.js
@@ -40,11 +40,11 @@ jobs:
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add duckduckgo-results/
-          git commit -m "افزودن نتایج جستجو از DuckDuckGo" || true
+          git commit -m "افزودن نتایج جستجو" || true
           git push
       
       - name: آپلود نتایج
         uses: actions/upload-artifact@v4
         with:
-          name: duckduckgo-search-results
+          name: duckduckgo-results
           path: duckduckgo-results/
