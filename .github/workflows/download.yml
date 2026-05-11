@@ -1,0 +1,84 @@
+name: دانلودر حرفه‌ای
+
+on:
+  workflow_dispatch:
+    inputs:
+      urls:
+        description: 'لینک دانلود (فقط یک لینک)'
+        required: true
+        type: string
+      password:
+        description: 'رمز فایل زیپ (اختیاری)'
+        required: false
+        type: string
+
+jobs:
+  download:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - name: دریافت کدها
+      uses: actions/checkout@v4
+    
+    - name: نصب ابزارها
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y aria2 zip
+    
+    - name: دانلود و پردازش
+      run: |
+        rm -rf downloads
+        mkdir -p downloads
+        cd downloads
+        
+        URL="${{ inputs.urls }}"
+        PASS="${{ inputs.password }}"
+        
+        echo "شروع دانلود از: $URL"
+        
+        FILENAME=$(basename "$URL" | cut -d '?' -f1)
+        aria2c -x 16 -s 16 -o "$FILENAME" "$URL"
+        
+        if [ -f "$FILENAME" ]; then
+            SIZE=$(du -h "$FILENAME" | cut -f1)
+            echo "دانلود شد: $FILENAME - حجم: $SIZE"
+            
+            if [ -n "$PASS" ]; then
+                zip -P "$PASS" "download.zip" "$FILENAME"
+                echo "زیپ شده با رمز"
+            else
+                zip "download.zip" "$FILENAME"
+                echo "زیپ شده بدون رمز"
+            fi
+            rm "$FILENAME"
+        else
+            echo "خطا در دانلود!"
+            exit 1
+        fi
+        
+        echo "لیست فایل‌ها:" > list.txt
+        echo "تاریخ: $(date)" >> list.txt
+        echo "لینک: $URL" >> list.txt
+        if [ -n "$PASS" ]; then
+            echo "رمز: $PASS" >> list.txt
+        else
+            echo "رمز: ندارد" >> list.txt
+        fi
+        echo "------------------------" >> list.txt
+        ls -lh >> list.txt
+        
+        cd ..
+        
+        git config user.name "github-actions[bot]"
+        git config user.email "actions@github.com"
+        git add downloads/
+        git commit -m "افزودن فایل‌های دانلود شده" || echo "تغییری نیست"
+        git push
+    
+    - name: آپلود
+      uses: actions/upload-artifact@v4
+      with:
+        name: فایل-های-دانلودی
+        path: downloads/
