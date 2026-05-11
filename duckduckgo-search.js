@@ -3,22 +3,21 @@ const fs = require('fs');
 
 (async () => {
   // ============================================
-  // پاک کردن پوشه قبلی
+  // پاکسازی کامل پوشه قبلی (حل مشکل اسکرین‌شات قدیمی)
   // ============================================
   if (fs.existsSync('duckduckgo-results')) {
     fs.rmSync('duckduckgo-results', { recursive: true, force: true });
-    console.log('🗑️ پوشه قبلی duckduckgo-results پاک شد');
+    console.log('🗑️ پوشه قبلی duckduckgo-results به طور کامل پاک شد');
   }
   
   const query = process.env.INPUT_QUERY;
   const numResults = parseInt(process.env.INPUT_NUM) || 15;
-  const searchType = process.env.INPUT_TYPE || 'all';
+  const searchType = process.env.INPUT_TYPE || 'videos';
   
   // ساخت پوشه جدید
-  fs.mkdirSync('duckduckgo-results');
+  fs.mkdirSync('duckduckgo-results', { recursive: true });
   
-  console.log(`🦆 DuckDuckGo - جستجو: "${query}"`);
-  console.log(`📊 نوع: ${searchType} | تعداد: ${numResults}`);
+  console.log(`🦆 جستجو در DuckDuckGo: "${query}" (${searchType})`);
   
   // تعیین URL بر اساس نوع جستجو
   let searchUrl;
@@ -35,14 +34,13 @@ const fs = require('fs');
   
   console.log(`🌐 رفتن به: ${searchUrl}`);
   
-  // راه‌اندازی مرورگر
   const browser = await puppeteer.launch({
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
   
   const page = await browser.newPage();
-  await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36');
+  await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
   await page.setViewport({ width: 1280, height: 720 });
   
   await page.goto(searchUrl, { 
@@ -50,14 +48,13 @@ const fs = require('fs');
     timeout: 45000 
   });
   
-  // اسکرین‌شات
+  // اسکرین‌شات جدید (حالا از صفحه درست)
   await page.screenshot({ path: 'duckduckgo-results/screenshot.png', fullPage: true });
-  console.log('📸 اسکرین‌شات ذخیره شد');
+  console.log('📸 اسکرین‌شات جدید ذخیره شد');
   
-  // ذخیره HTML کامل
+  // ذخیره HTML صفحه جستجو
   const html = await page.content();
-  fs.writeFileSync('duckduckgo-results/page.html', html);
-  console.log('📄 HTML صفحه ذخیره شد');
+  fs.writeFileSync('duckduckgo-results/search-page.html', html);
   
   // استخراج لینک‌ها بر اساس نوع جستجو
   let links = [];
@@ -69,7 +66,7 @@ const fs = require('fs');
         const src = img.src || img.getAttribute('data-src');
         if (src && src.startsWith('http') && 
             !src.includes('duckduckgo.com') &&
-            (src.includes('.jpg') || src.includes('.png') || src.includes('.jpeg') || src.includes('.webp'))) {
+            (src.includes('.jpg') || src.includes('.png') || src.includes('.jpeg'))) {
           results.push(src);
         }
       });
@@ -79,9 +76,14 @@ const fs = require('fs');
   else if (searchType === 'videos') {
     links = await page.evaluate(() => {
       const results = [];
-      document.querySelectorAll('a[href*=".mp4"], a[href*=".mkv"], a[href*=".avi"], a[href*="youtube.com/watch"], a[href*="aparat.com/v"]').forEach(a => {
-        const href = a.href;
-        if (href && !results.includes(href)) results.push(href);
+      // لینک‌های صفحات ویدیو
+      document.querySelectorAll('a[data-testid="result-title-a"], a.result__a').forEach(a => {
+        let href = a.href;
+        if (href && href.startsWith('http') && 
+            !href.includes('duckduckgo.com') && 
+            (href.includes('youtube.com') || href.includes('aparat.com') || href.includes('vimeo.com'))) {
+          results.push(href);
+        }
       });
       return [...new Set(results)];
     });
@@ -89,8 +91,8 @@ const fs = require('fs');
   else {
     links = await page.evaluate(() => {
       const results = [];
-      document.querySelectorAll('a[data-testid="result-title-a"], a.result__a, a.js-result-extras-url').forEach(a => {
-        let href = a.href || a.getAttribute('href');
+      document.querySelectorAll('a[data-testid="result-title-a"], a.result__a').forEach(a => {
+        let href = a.href;
         if (href && href.startsWith('http') && 
             !href.includes('duckduckgo.com') && 
             !results.includes(href)) {
@@ -120,28 +122,31 @@ const fs = require('fs');
         .container{max-width:900px;margin:0 auto}
         .card{background:white;border-radius:20px;padding:25px}
         h1{color:#333}
-        .badge{display:inline-block;background:#28a745;color:white;padding:2px 8px;border-radius:20px;font-size:12px}
+        .badge{background:#28a745;color:white;padding:2px 8px;border-radius:20px;font-size:12px}
         .link-list{list-style:none;padding:0}
         .link-list li{background:#f8f9fa;margin:8px 0;padding:12px;border-radius:8px;word-break:break-all}
         .link-list a{color:#667eea;text-decoration:none}
         img{max-width:100%;border-radius:10px;margin:10px 0}
+        .info{background:#e9ecef;padding:10px;border-radius:10px;margin:15px 0}
     </style>
 </head>
 <body>
     <div class="container">
         <div class="card">
-            <h1>🦆 نتایج جستجو در DuckDuckGo</h1>
-            <p><strong>عبارت جستجو:</strong> ${query}</p>
-            <p><strong>نوع:</strong> ${typeName[searchType]} <span class="badge">${finalLinks.length} نتیجه</span></p>
-            <p><strong>تاریخ:</strong> ${new Date().toLocaleString('fa-IR')}</p>
+            <h1>🦆 نتایج جستجو</h1>
+            <div class="info">
+                <strong>عبارت جستجو:</strong> ${query}<br>
+                <strong>نوع:</strong> ${typeName[searchType]} <span class="badge">${finalLinks.length} نتیجه</span><br>
+                <strong>تاریخ:</strong> ${new Date().toLocaleString('fa-IR')}
+            </div>
             <img src="screenshot.png" style="max-width:100%;border:1px solid #ddd;border-radius:10px">
             <hr>
             <h2>📋 لینک‌های پیدا شده</h2>
             <ul class="link-list">`;
   
-  finalLinks.forEach(link => {
+  for (const link of finalLinks) {
     htmlLinks += `<li><a href="${link}" target="_blank">🔗 ${link}</a></li>`;
-  });
+  }
   
   htmlLinks += `</ul></div></div></body></html>`;
   
@@ -150,7 +155,8 @@ const fs = require('fs');
   console.log(`\n✅ جستجو با موفقیت انجام شد!`);
   console.log(`📁 پوشه: duckduckgo-results/`);
   console.log(`📄 فایل‌ها:`);
-  console.log(`   - screenshot.png : اسکرین‌شات`);
+  console.log(`   - screenshot.png : اسکرین‌شات (از جستجوی جدید)`);
+  console.log(`   - search-page.html : کد کامل صفحه جستجو`);
   console.log(`   - index.html : صفحه نمایش لینک‌ها`);
   console.log(`   - links.txt : ${finalLinks.length} لینک`);
 })();
