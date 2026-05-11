@@ -2,9 +2,7 @@ const puppeteer = require('puppeteer');
 const fs = require('fs');
 
 (async () => {
-  // ============================================
-  // پاکسازی کامل پوشه قبلی (حل مشکل اسکرین‌شات قدیمی)
-  // ============================================
+  // پاک کردن کامل پوشه قبلی
   if (fs.existsSync('duckduckgo-results')) {
     fs.rmSync('duckduckgo-results', { recursive: true, force: true });
     console.log('🗑️ پوشه قبلی duckduckgo-results به طور کامل پاک شد');
@@ -12,7 +10,7 @@ const fs = require('fs');
   
   const query = process.env.INPUT_QUERY;
   const numResults = parseInt(process.env.INPUT_NUM) || 15;
-  const searchType = process.env.INPUT_TYPE || 'videos';
+  const searchType = process.env.INPUT_TYPE || 'all';
   
   // ساخت پوشه جدید
   fs.mkdirSync('duckduckgo-results', { recursive: true });
@@ -23,13 +21,13 @@ const fs = require('fs');
   let searchUrl;
   switch(searchType) {
     case 'images':
-      searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query)}&iax=images&ia=images`;
+      searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query)}&iax=images&ia=images&kp=-1`;
       break;
     case 'videos':
-      searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query)}&iax=videos&ia=videos`;
+      searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query)}&iax=videos&ia=videos&kp=-1`;
       break;
     default:
-      searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query)}&ia=web`;
+      searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query)}&ia=web&kp=-1`;
   }
   
   console.log(`🌐 رفتن به: ${searchUrl}`);
@@ -48,9 +46,19 @@ const fs = require('fs');
     timeout: 45000 
   });
   
-  // اسکرین‌شات جدید (حالا از صفحه درست)
+  // ============================================
+  // گرفتن زمان فعلی برای نام فایل یکتا
+  // ============================================
+  const now = new Date();
+  const timestamp = `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}_${now.getHours()}-${now.getMinutes()}-${now.getSeconds()}`;
+  
+  // اسکرین‌شات با نام یکتا (برای جلوگیری از کش)
+  const screenshotName = `screenshot_${timestamp}.png`;
+  await page.screenshot({ path: `duckduckgo-results/${screenshotName}`, fullPage: true });
+  console.log(`📸 اسکرین‌شات جدید ذخیره شد: ${screenshotName}`);
+  
+  // همچنین یک فایل screenshot.png هم برای دسترسی آسان ایجاد کن (overwrite)
   await page.screenshot({ path: 'duckduckgo-results/screenshot.png', fullPage: true });
-  console.log('📸 اسکرین‌شات جدید ذخیره شد');
   
   // ذخیره HTML صفحه جستجو
   const html = await page.content();
@@ -76,7 +84,6 @@ const fs = require('fs');
   else if (searchType === 'videos') {
     links = await page.evaluate(() => {
       const results = [];
-      // لینک‌های صفحات ویدیو
       document.querySelectorAll('a[data-testid="result-title-a"], a.result__a').forEach(a => {
         let href = a.href;
         if (href && href.startsWith('http') && 
@@ -110,7 +117,7 @@ const fs = require('fs');
   // ذخیره لینک‌ها
   fs.writeFileSync('duckduckgo-results/links.txt', finalLinks.join('\n'));
   
-  // فایل HTML نمایشی
+  // فایل HTML نمایشی با استفاده از اسکرین‌شات جدید
   let typeName = { all: 'همه موارد', images: 'عکس‌ها', videos: 'ویدیوها' };
   let htmlLinks = `<!DOCTYPE html>
 <html dir="rtl" lang="fa">
@@ -126,20 +133,23 @@ const fs = require('fs');
         .link-list{list-style:none;padding:0}
         .link-list li{background:#f8f9fa;margin:8px 0;padding:12px;border-radius:8px;word-break:break-all}
         .link-list a{color:#667eea;text-decoration:none}
-        img{max-width:100%;border-radius:10px;margin:10px 0}
+        img{max-width:100%;border-radius:10px;margin:10px 0;border:1px solid #ddd}
         .info{background:#e9ecef;padding:10px;border-radius:10px;margin:15px 0}
+        .timestamp{color:#666;font-size:12px}
     </style>
 </head>
 <body>
     <div class="container">
         <div class="card">
-            <h1>🦆 نتایج جستجو</h1>
+            <h1>🦆 نتایج جستجو در DuckDuckGo</h1>
             <div class="info">
                 <strong>عبارت جستجو:</strong> ${query}<br>
                 <strong>نوع:</strong> ${typeName[searchType]} <span class="badge">${finalLinks.length} نتیجه</span><br>
-                <strong>تاریخ:</strong> ${new Date().toLocaleString('fa-IR')}
+                <strong>تاریخ و زمان:</strong> ${now.toLocaleString('fa-IR')}<br>
+                <strong>SafeSearch:</strong> غیرفعال
             </div>
-            <img src="screenshot.png" style="max-width:100%;border:1px solid #ddd;border-radius:10px">
+            <img src="${screenshotName}" style="max-width:100%;border-radius:10px" onerror="this.src='screenshot.png'">
+            <div class="timestamp">📸 اسکرین‌شات: ${screenshotName}</div>
             <hr>
             <h2>📋 لینک‌های پیدا شده</h2>
             <ul class="link-list">`;
@@ -155,7 +165,8 @@ const fs = require('fs');
   console.log(`\n✅ جستجو با موفقیت انجام شد!`);
   console.log(`📁 پوشه: duckduckgo-results/`);
   console.log(`📄 فایل‌ها:`);
-  console.log(`   - screenshot.png : اسکرین‌شات (از جستجوی جدید)`);
+  console.log(`   - ${screenshotName} : اسکرین‌شات جدید و اصلی`);
+  console.log(`   - screenshot.png : اسکرین‌شات (نسخه کپی)`);
   console.log(`   - search-page.html : کد کامل صفحه جستجو`);
   console.log(`   - index.html : صفحه نمایش لینک‌ها`);
   console.log(`   - links.txt : ${finalLinks.length} لینک`);
