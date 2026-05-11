@@ -1,0 +1,8 @@
+لیست فایل‌ها:
+تاریخ: Mon May 11 18:49:43 UTC 2026
+لینک: https://github.com/ThisIsDara/mhr-cfw-go/releases/download/v1.3.0/mhr-cfw-go-linux-arm64
+رمز: ندارد
+------------------------
+total 2.6M
+-rw-r--r-- 1 runner runner 2.6M May 11 18:49 download.zip
+-rw-r--r-- 1 runner runner  210 May 11 18:49 list.txt
