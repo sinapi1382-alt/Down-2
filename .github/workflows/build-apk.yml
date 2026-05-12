@@ -1,4 +1,4 @@
-name: ساخت اپلیکیشن اندروید
+name: ساخت APK
 
 on:
   workflow_dispatch:
@@ -6,8 +6,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - name: دریافت کدها
         uses: actions/checkout@v4
@@ -15,7 +13,7 @@ jobs:
       - name: نصب Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
 
       - name: نصب Java
         uses: actions/setup-java@v4
@@ -23,55 +21,74 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: آماده‌سازی فایل‌های وب
-        run: |
-          mkdir -p www
-          
-          # نمایش لیست فایل‌ها برای دیباگ
-          echo "📁 فایل‌های موجود در ریشه:"
-          ls -la
-          
-          # کپی کردن index.html (اگر وجود داشته باشه)
-          if [ -f "index.html" ]; then
-            cp index.html www/
-            echo "✅ index.html کپی شد"
-          else
-            echo "❌ index.html پیدا نشد!"
-            # ساختن یک نمونه ساده
-            echo '<!DOCTYPE html>
-<html dir="rtl">
-<head><meta charset="UTF-8"><title>دانلودر</title></head>
-<body style="font-family:Tahoma;background:#667eea;text-align:center;padding:50px">
-<h1>📥 دانلودر حرفه‌ای</h1>
-<p>فایل index.html اصلی پیدا نشد</p>
-<p>لطفا فایل index.html را به ریپازیتوری اضافه کنید</p>
-</body>
-</html>' > www/index.html
-          fi
-          
-          # کپی سایر فایل‌های مهم
-          cp *.css www/ 2>/dev/null || true
-          cp *.js www/ 2>/dev/null || true
-          cp *.png www/ 2>/dev/null || true
-          
-          echo "📁 محتویات پوشه www:"
-          ls -la www/
-
       - name: نصب Capacitor
         run: |
           npm init -y
           npm install @capacitor/core @capacitor/android @capacitor/cli
 
+      - name: ساخت پوشه www و کپی فایل‌ها
+        run: |
+          mkdir -p www
+          cat > www/index.html << 'EOF'
+<!DOCTYPE html>
+<html dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>دانلودر حرفه‌ای</title>
+    <style>
+        body{font-family:Tahoma;background:#667eea;padding:20px;margin:0}
+        .container{max-width:600px;margin:0 auto}
+        .card{background:white;border-radius:20px;padding:25px}
+        h1{color:#333;text-align:center;font-size:24px}
+        input,textarea{width:100%;padding:12px;margin:10px 0;border-radius:10px;border:1px solid #ddd}
+        button{width:100%;padding:14px;background:#667eea;color:white;border:none;border-radius:10px;font-size:16px;margin:10px 0}
+        .result{background:#f8f9fa;padding:15px;border-radius:10px;margin-top:15px;display:none}
+        .footer{text-align:center;color:white;margin-top:20px}
+    </style>
+</head>
+<body>
+<div class="container">
+<div class="card">
+<h1>📥 دانلودر حرفه‌ای</h1>
+<p style="text-align:center">لینک فایل رو وارد کن</p>
+<input type="text" id="url" placeholder="https://example.com/file.zip">
+<input type="text" id="password" placeholder="رمز (اختیاری)">
+<button onclick="run()">🚀 شروع دانلود</button>
+<div id="result" class="result"></div>
+</div>
+<div class="footer">ساخته شده با ❤️</div>
+</div>
+<script>
+function run(){
+    var url=document.getElementById('url').value;
+    var pass=document.getElementById('password').value;
+    var result=document.getElementById('result');
+    result.style.display='block';
+    result.innerHTML='<span>⏳ در حال اجرا...</span>';
+    fetch('https://api.github.com/repos/sinapi1382-alt/Down-2/actions/workflows/download.yml/dispatches',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ref:'main',inputs:{urls:url,password:pass}})
+    }).then(function(r){
+        if(r.ok){
+            result.innerHTML='✅ دانلود شروع شد! بعد چند دقیقه نتیجه رو ببین.';
+        }else{
+            result.innerHTML='❌ خطا: '+r.status;
+        }
+    }).catch(function(e){
+        result.innerHTML='❌ خطا: '+e.message;
+    });
+}
+</script>
+</body>
+</html>
+EOF
+
       - name: ساخت پروژه Capacitor
         run: |
-          npx cap init Downloader com.downloader.app --web-dir=www
+          npx cap init "Downloader" "com.downloader.app" --web-dir=www
           npx cap add android
-
-      - name: کپی نهایی فایل‌ها به پروژه اندروید
-        run: |
-          # اطمینان از کپی شدن فایل‌ها
-          cp -r www/* android/app/src/main/assets/public/ 2>/dev/null || true
-          cp www/index.html android/app/src/main/assets/public/ 2>/dev/null || true
 
       - name: ساخت APK
         run: |
@@ -79,28 +96,8 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      - name: کپی APK به پوشه
-        run: |
-          mkdir -p apk-files
-          if [ -f "android/app/build/outputs/apk/debug/app-debug.apk" ]; then
-            cp android/app/build/outputs/apk/debug/app-debug.apk apk-files/downloader-app.apk
-            echo "✅ APK ساخته شد"
-            ls -la apk-files/
-          else
-            echo "❌ فایل APK پیدا نشد"
-            exit 1
-          fi
-
-      - name: ذخیره در ریپازیتوری
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "actions@github.com"
-          git add apk-files/
-          git commit -m "افزودن اپلیکیشن" || echo "تغییری نیست"
-          git push
-
-      - name: آپلود Artifact
+      - name: آپلود APK
         uses: actions/upload-artifact@v4
         with:
           name: downloader-app
-          path: apk-files/downloader-app.apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
