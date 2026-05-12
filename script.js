@@ -1,5 +1,6 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs');
+const { exec } = require('child_process');
 
 (async () => {
   // پاک کردن پوشه قبلی
@@ -30,9 +31,7 @@ const fs = require('fs');
     console.log(`خطا در بارگذاری: ${e.message}`);
   }
   
-  // ============================================
   // اسکرول خودکار به پایین صفحه برای لود کامل محتوا
-  // ============================================
   console.log(`3. اسکرول خودکار به پایین صفحه...`);
   await page.evaluate(async () => {
     await new Promise((resolve) => {
@@ -77,9 +76,21 @@ const fs = require('fs');
   fs.writeFileSync('browser-output/site.html', htmlContent);
   console.log(`✅ HTML کامل سایت ذخیره شد (${(htmlContent.length/1024).toFixed(1)} KB)`);
   
+  // ============================================
+  // تبدیل HTML به PDF (قابلیت جدید)
+  // ============================================
+  console.log(`6. تبدیل HTML به PDF...`);
+  await new Promise((resolve) => {
+    exec(`wkhtmltopdf --enable-local-file-access --page-size A4 --margin-top 10mm --margin-bottom 10mm browser-output/site.html browser-output/site.pdf`, (error) => {
+      if (error) console.log(`⚠️ خطا در ساخت PDF: ${error.message}`);
+      else console.log(`✅ PDF صفحه ذخیره شد`);
+      resolve();
+    });
+  });
+  
   // استخراج لینک‌های مدیا
   if (action === 'media' || action === 'both') {
-    console.log(`6. استخراج لینک‌های مدیا...`);
+    console.log(`7. استخراج لینک‌های مدیا...`);
     
     videos = await page.evaluate(() => {
       const result = [];
@@ -113,7 +124,7 @@ const fs = require('fs');
   // ============================================
   // ساخت فایل HTML نمایشی
   // ============================================
-  console.log(`7. ساخت فایل نمایانگر...`);
+  console.log(`8. ساخت فایل نمایانگر...`);
   
   let html = `<!DOCTYPE html>
 <html dir="rtl" lang="fa">
@@ -151,6 +162,7 @@ const fs = require('fs');
             
             <div style="text-align:center">
                 <a href="site.html" class="btn" target="_blank">🌍 HTML کامل سایت</a>
+                <a href="site.pdf" class="btn" target="_blank">📑 PDF صفحه</a>
                 <a href="screenshot.png" class="btn" target="_blank">📸 اسکرین شات</a>
                 <a href="links.txt" class="btn" target="_blank">📋 دانلود لینک‌ها</a>
             </div>
@@ -191,6 +203,7 @@ const fs = require('fs');
   textContent += `تاریخ: ${date}\n`;
   textContent += `لینک اصلی: ${url}\n\n`;
   textContent += `فایل HTML کامل سایت: site.html\n`;
+  textContent += `فایل PDF صفحه: site.pdf\n`;
   textContent += `اسکرین شات کامل: screenshot.png\n\n`;
   
   if (videos.length > 0) {
@@ -207,6 +220,7 @@ const fs = require('fs');
   
   console.log(`✅ خروجی نهایی ذخیره شد:`);
   console.log(`   - site.html : کد HTML کامل سایت`);
+  console.log(`   - site.pdf : PDF صفحه`);
   console.log(`   - screenshot_${timestamp}.png : اسکرین شات کامل`);
   console.log(`   - index.html : صفحه نمایانگر`);
   console.log(`   - links.txt : لیست لینک‌ها`);
