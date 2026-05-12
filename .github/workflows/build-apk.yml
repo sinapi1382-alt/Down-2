@@ -22,378 +22,91 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
           
-      - name: Create web files with token
+      - name: Create app
         run: |
           mkdir -p www
-          cat > www/index.html << 'HTMLEOF'
+          cat > www/index.html << 'EOF'
           <!DOCTYPE html>
-          <html>
-          <head>
-              <meta charset="UTF-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>GitHub Controller</title>
-              <style>
-                  *{margin:0;padding:0;box-sizing:border-box}
-                  body{font-family:Arial;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;padding:20px}
-                  .container{max-width:800px;margin:0 auto}
-                  .card{background:white;border-radius:20px;padding:25px;margin-bottom:20px;box-shadow:0 10px 40px rgba(0,0,0,0.2)}
-                  h1{color:#333;text-align:center;margin-bottom:20px}
-                  select,textarea,input{width:100%;padding:12px;margin:10px 0;border:2px solid #ddd;border-radius:10px;font-size:14px}
-                  button{width:100%;padding:14px;background:#667eea;color:white;border:none;border-radius:10px;font-size:16px;cursor:pointer;margin:5px 0}
-                  .result{background:#f8f9fa;padding:15px;border-radius:10px;margin-top:20px;display:none;word-break:break-all}
-                  .success{color:#28a745;background:#d4edda}
-                  .error{color:#dc3545;background:#f8d7da}
-                  .info{color:#856404;background:#fff3cd}
-                  .loading{display:inline-block;width:20px;height:20px;border:3px solid #f3f3f3;border-top:3px solid #667eea;border-radius:50%;animation:spin 1s linear infinite;margin-right:10px;vertical-align:middle}
-                  @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
-                  .footer{text-align:center;color:rgba(255,255,255,0.8);font-size:11px;margin-top:20px}
-                  .file-list{background:#f8f9fa;border-radius:10px;padding:10px;margin-top:15px;max-height:400px;overflow-y:auto}
-                  .file-item{background:white;padding:12px;margin:8px 0;border-radius:8px;display:flex;justify-content:space-between;align-items:center;border:1px solid #ddd}
-                  .file-name{color:#333;word-break:break-all;flex:1;font-size:12px}
-                  .file-download{background:#28a745;color:white;border:none;padding:8px 15px;border-radius:8px;cursor:pointer}
-                  .screenshot-img{max-width:100%;border-radius:10px;margin-top:10px;border:1px solid #ddd;cursor:pointer}
-                  .refresh-btn{background:#6c757d;margin:10px 0;padding:10px}
-                  .tab{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:20px}
-                  .tab-btn{background:#e9ecef;color:#333;flex:1;padding:10px;border:none;border-radius:10px;cursor:pointer;font-size:12px}
-                  .tab-btn.active{background:#667eea;color:white}
-                  .tab-content{display:none}
-                  .tab-content.active{display:block}
-                  .section-title{background:#f0f0f0;padding:10px;border-radius:10px;margin:15px 0 10px 0;font-weight:bold}
-                  .progress-bar{background:#e9ecef;border-radius:10px;margin:15px 0;height:25px;overflow:hidden}
-                  .progress-fill{background:#28a745;width:0%;height:100%;transition:width 0.5s;color:white;text-align:center;font-size:12px;line-height:25px}
-                  .status-badge{padding:5px 10px;border-radius:20px;font-size:12px;margin-left:10px}
-                  .status-running{background:#ffc107;color:#333}
-                  .status-done{background:#28a745;color:white}
-                  .view-result-btn{background:#667eea;color:white;border:none;padding:10px;border-radius:10px;margin-top:10px;cursor:pointer}
-              </style>
+          <html dir="rtl" lang="fa">
+          <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>GitHub Controller</title>
+          <style>
+          *{margin:0;padding:0;box-sizing:border-box}
+          body{font-family:Tahoma;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);padding:20px}
+          .container{max-width:700px;margin:0 auto}
+          .card{background:white;border-radius:20px;padding:25px;margin-bottom:20px;box-shadow:0 10px 40px rgba(0,0,0,0.2)}
+          h1{color:#333;text-align:center;margin-bottom:20px}
+          select,textarea,input{width:100%;padding:12px;margin:10px 0;border:2px solid #ddd;border-radius:10px}
+          button{width:100%;padding:14px;background:#667eea;color:white;border:none;border-radius:10px;margin:5px 0}
+          .result{padding:15px;border-radius:10px;margin-top:20px;display:none}
+          .success{background:#d4edda;color:#28a745}
+          .error{background:#f8d7da;color:#dc3545}
+          .info{background:#fff3cd;color:#856404}
+          .loading{display:inline-block;width:20px;height:20px;border:3px solid #f3f3f3;border-top:3px solid #667eea;border-radius:50%;animation:spin 1s linear infinite;margin-right:10px;vertical-align:middle}
+          @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+          .footer{text-align:center;color:rgba(255,255,255,0.8);font-size:11px;margin-top:20px}
+          .tab{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:20px}
+          .tab-btn{background:#e9ecef;color:#333;flex:1;padding:10px;border:none;border-radius:10px;cursor:pointer}
+          .tab-btn.active{background:#667eea;color:white}
+          .tab-content{display:none}
+          .tab-content.active{display:block}
+          .file-list{background:#f8f9fa;border-radius:10px;padding:10px;margin-top:15px;max-height:400px;overflow-y:auto}
+          .file-item{background:white;padding:12px;margin:8px 0;border-radius:8px;display:flex;justify-content:space-between;align-items:center;border:1px solid #ddd}
+          .file-name{font-size:12px;word-break:break-all;flex:1}
+          .file-download{background:#28a745;color:white;border:none;padding:8px 15px;border-radius:8px}
+          .screenshot-img{max-width:100%;border-radius:10px;margin-top:10px;cursor:pointer}
+          .progress-bar{background:#e9ecef;border-radius:10px;margin:15px 0;height:25px;overflow:hidden}
+          .progress-fill{background:#28a745;width:0%;height:100%;color:white;text-align:center;font-size:12px;line-height:25px}
+          </style>
           </head>
           <body>
-          <div class="container">
-          <div class="card">
+          <div class="container"><div class="card">
           <h1>🎮 GitHub Controller</h1>
-          
           <div class="tab">
               <button class="tab-btn active" onclick="showTab('run')">🚀 اجرا</button>
               <button class="tab-btn" onclick="showTab('progress')">📊 در حال اجرا</button>
               <button class="tab-btn" onclick="showTab('downloads')">📥 دانلودها</button>
               <button class="tab-btn" onclick="showTab('browser')">🌐 مرورگر</button>
               <button class="tab-btn" onclick="showTab('search')">🔍 داک داک گو</button>
-              <button class="tab-btn" onclick="showTab('video')">🎬 ویدیوها</button>
           </div>
-          
-          <!-- تب اجرا -->
           <div id="tab-run" class="tab-content active">
-          <select id="workflowSelect">
-              <option value="download">📥 Download File</option>
-              <option value="video">🎬 Download Video</option>
-              <option value="browser">🌐 Web Browser</option>
-              <option value="search">🔍 DuckDuckGo Search</option>
-              <option value="clean">🧹 Clean Downloads</option>
-          </select>
-          
-          <div id="downloadInputs">
-              <textarea id="url" rows="2" placeholder="Enter URL"></textarea>
-              <input type="text" id="password" placeholder="Password (optional)">
-          </div>
-          
-          <div id="browserInputs" style="display:none">
-              <textarea id="browserUrl" rows="2" placeholder="Website URL"></textarea>
-              <select id="browserAction">
-                  <option value="screenshot">Screenshot only</option>
-                  <option value="media">Media only</option>
-                  <option value="both">Both</option>
+              <select id="workflowSelect">
+                  <option value="download">📥 دانلود فایل</option>
+                  <option value="browser">🌐 مرورگر خودکار</option>
+                  <option value="search">🔍 جستجو در DuckDuckGo</option>
+                  <option value="clean">🧹 پاکسازی پوشه</option>
               </select>
+              <div id="downloadInputs"><textarea id="url" rows="2" placeholder="لینک دانلود"></textarea><input type="text" id="password" placeholder="رمز (اختیاری)"></div>
+              <div id="browserInputs" style="display:none"><textarea id="browserUrl" rows="2" placeholder="آدرس سایت"></textarea><select id="browserAction"><option value="both">اسکرین شات + لینک‌ها</option></select></div>
+              <div id="searchInputs" style="display:none"><input type="text" id="searchQuery" placeholder="عبارت جستجو"><input type="number" id="searchNum" value="15"><select id="searchType"><option value="videos">ویدیوها</option><option value="images">عکس‌ها</option></select></div>
+              <button id="runBtn">🚀 اجرا</button>
+              <div id="result" class="result"></div>
           </div>
-          
-          <div id="searchInputs" style="display:none">
-              <input type="text" id="searchQuery" placeholder="Search query">
-              <input type="number" id="searchNum" value="15">
-              <select id="searchType">
-                  <option value="videos">Videos</option>
-                  <option value="images">Images</option>
-                  <option value="all">All</option>
-              </select>
-          </div>
-          
-          <button id="runBtn">🚀 Run</button>
-          <div id="result" class="result"></div>
-          </div>
-          
-          <!-- تب در حال اجرا با درصد -->
-          <div id="tab-progress" class="tab-content">
-              <div id="activeTasks">
-                  <p>No active tasks. Run a workflow from the "Run" tab.</p>
-              </div>
-          </div>
-          
-          <!-- تب دانلود فایل -->
-          <div id="tab-downloads" class="tab-content">
-              <button class="refresh-btn" onclick="loadFiles('downloads', 'downloadsList')">🔄 Refresh</button>
-              <div id="downloadsList" class="file-list">Loading...</div>
-          </div>
-          
-          <!-- تب مرورگر (فقط اسکرین شات‌های یکتا) -->
-          <div id="tab-browser" class="tab-content">
-              <button class="refresh-btn" onclick="loadBrowserScreenshots()">🔄 Refresh</button>
-              <div class="section-title">📸 اسکرین شات‌های مرورگر</div>
-              <div id="browserScreenshots" class="file-list">Loading...</div>
-          </div>
-          
-          <!-- تب داک داک گو (فقط اسکرین شات‌های یکتا) -->
-          <div id="tab-search" class="tab-content">
-              <button class="refresh-btn" onclick="loadSearchScreenshots()">🔄 Refresh</button>
-              <div class="section-title">📸 اسکرین شات‌های داک داک گو</div>
-              <div id="searchScreenshots" class="file-list">Loading...</div>
-          </div>
-          
-          <!-- تب ویدیوها -->
-          <div id="tab-video" class="tab-content">
-              <button class="refresh-btn" onclick="loadFiles('video-downloads', 'videoList')">🔄 Refresh</button>
-              <div id="videoList" class="file-list">Loading...</div>
-          </div>
-          
-          </div>
-          <div class="footer">Powered by GitHub Actions</div>
-          </div>
-          
+          <div id="tab-progress" class="tab-content"><div id="activeTasks">هیچ کاری در حال اجرا نیست</div></div>
+          <div id="tab-downloads" class="tab-content"><button class="file-download" style="margin-bottom:10px" onclick="loadFiles('downloads','downloadsList')">🔄 Refresh</button><div id="downloadsList" class="file-list">Loading...</div></div>
+          <div id="tab-browser" class="tab-content"><button class="file-download" style="margin-bottom:10px" onclick="loadScreenshots('browser-output','browserScreenshots')">🔄 Refresh</button><div id="browserScreenshots" class="file-list">Loading...</div></div>
+          <div id="tab-search" class="tab-content"><button class="file-download" style="margin-bottom:10px" onclick="loadScreenshots('duckduckgo-results','searchScreenshots')">🔄 Refresh</button><div id="searchScreenshots" class="file-list">Loading...</div></div>
+          </div><div class="footer">Powered by GitHub Actions</div></div>
           <script>
-          const repo = 'sinapi1382-alt/Down-2';
-          const token = '${{ secrets.GH_TOKEN }}';
-          
-          let activeTask = null;
-          let checkInterval = null;
-          
-          function showTab(tabName) {
-              document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-              document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-              document.getElementById('tab-' + tabName).classList.add('active');
-              event.target.classList.add('active');
-              
-              if (tabName === 'downloads') loadFiles('downloads', 'downloadsList');
-              if (tabName === 'browser') loadBrowserScreenshots();
-              if (tabName === 'search') loadSearchScreenshots();
-              if (tabName === 'video') loadFiles('video-downloads', 'videoList');
-              if (tabName === 'progress') updateProgressTab();
-          }
-          
-          function showResult(type, msg) {
-              const div = document.getElementById('result');
-              div.className = 'result show ' + type;
-              div.innerHTML = msg;
-              div.style.display = 'block';
-          }
-          
-          function updateProgressTab() {
-              const container = document.getElementById('activeTasks');
-              if (activeTask) {
-                  container.innerHTML = `
-                      <div class="file-item" style="flex-direction:column;align-items:stretch">
-                          <div style="margin-bottom:10px"><strong>📥 ${activeTask.name}</strong></div>
-                          <div class="progress-bar">
-                              <div class="progress-fill" style="width:${activeTask.progress}%">${activeTask.progress}%</div>
-                          </div>
-                          <div style="margin-top:10px">
-                              Status: <span class="status-badge status-running">Running...</span>
-                          </div>
-                          <button class="view-result-btn" onclick="viewResult()">📂 مشاهده نتیجه</button>
-                      </div>
-                  `;
-              } else {
-                  container.innerHTML = '<p>No active tasks. Run a workflow from the "Run" tab.</p>';
-              }
-          }
-          
-          function viewResult() {
-              if (activeTask && activeTask.outputFolder) {
-                  window.open(`https://github.com/${repo}/tree/main/${activeTask.outputFolder}`, '_blank');
-              }
-          }
-          
-          function simulateProgress(outputFolder, taskName) {
-              activeTask = { name: taskName, outputFolder: outputFolder, progress: 0 };
-              updateProgressTab();
-              
-              let progress = 0;
-              if (checkInterval) clearInterval(checkInterval);
-              
-              checkInterval = setInterval(() => {
-                  progress += 5;
-                  if (progress >= 100) {
-                      clearInterval(checkInterval);
-                      if (activeTask) activeTask.progress = 100;
-                      updateProgressTab();
-                      const container = document.getElementById('activeTasks');
-                      if (container) {
-                          const span = container.querySelector('.status-badge');
-                          if (span) {
-                              span.className = 'status-badge status-done';
-                              span.textContent = 'Completed!';
-                          }
-                      }
-                      setTimeout(() => {
-                          if (activeTask) activeTask = null;
-                          updateProgressTab();
-                          loadFiles('downloads', 'downloadsList');
-                          loadBrowserScreenshots();
-                          loadSearchScreenshots();
-                          loadFiles('video-downloads', 'videoList');
-                      }, 3000);
-                  } else {
-                      if (activeTask) activeTask.progress = progress;
-                      updateProgressTab();
-                  }
-              }, 2000);
-          }
-          
-          async function runWorkflow(workflow, inputs, outputFolder, taskName) {
-              showResult('info', '<span class="loading"></span> Running...');
-              simulateProgress(outputFolder, taskName);
-              
-              try {
-                  const res = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/${workflow}/dispatches`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                      body: JSON.stringify({ ref: 'main', inputs: inputs })
-                  });
-                  if (res.ok) {
-                      showResult('success', '✅ Started! Check "Progress" tab.');
-                  } else {
-                      showResult('error', '❌ Error: ' + res.status);
-                      clearInterval(checkInterval);
-                      activeTask = null;
-                      updateProgressTab();
-                  }
-              } catch(e) { 
-                  showResult('error', '❌ Error: ' + e.message);
-                  clearInterval(checkInterval);
-                  activeTask = null;
-                  updateProgressTab();
-              }
-          }
-          
-          async function loadFiles(folder, elementId) {
-              const container = document.getElementById(elementId);
-              if (!container) return;
-              container.innerHTML = '<span class="loading"></span> Loading...';
-              try {
-                  const res = await fetch(`https://api.github.com/repos/${repo}/contents/${folder}`, {
-                      headers: { 'Authorization': 'Bearer ' + token }
-                  });
-                  if (res.ok) {
-                      const files = await res.json();
-                      let html = '';
-                      for (const file of files) {
-                          if (file.name !== '.gitkeep') {
-                              html += `<div class="file-item">
-                                  <span class="file-name">📄 ${file.name}</span>
-                                  <button class="file-download" onclick="downloadFile('${file.download_url}')">Download</button>
-                              </div>`;
-                          }
-                      }
-                      container.innerHTML = html || 'No files found. Run a workflow first.';
-                  } else {
-                      container.innerHTML = 'No files found. Run a workflow first.';
-                  }
-              } catch(e) { container.innerHTML = 'Error: ' + e.message; }
-          }
-          
-          async function loadBrowserScreenshots() {
-              const container = document.getElementById('browserScreenshots');
-              container.innerHTML = '<span class="loading"></span> Loading screenshots...';
-              try {
-                  const res = await fetch(`https://api.github.com/repos/${repo}/contents/browser-output`, {
-                      headers: { 'Authorization': 'Bearer ' + token }
-                  });
-                  if (res.ok) {
-                      const files = await res.json();
-                      let html = '';
-                      for (const file of files) {
-                          if (file.name.includes('screenshot_') && file.name.endsWith('.png')) {
-                              html += `<div class="file-item" style="flex-direction:column;align-items:stretch">
-                                  <div style="margin-bottom:5px"><strong>📸 ${file.name}</strong></div>
-                                  <img src="${file.download_url}?raw=true" class="screenshot-img" onclick="window.open('${file.download_url}')">
-                                  <button class="file-download" style="margin-top:10px" onclick="downloadFile('${file.download_url}')">Download</button>
-                              </div>`;
-                          }
-                      }
-                      container.innerHTML = html || 'No screenshots found. Run Browser workflow first.';
-                  } else {
-                      container.innerHTML = 'No screenshots found. Run Browser workflow first.';
-                  }
-              } catch(e) { container.innerHTML = 'Error: ' + e.message; }
-          }
-          
-          async function loadSearchScreenshots() {
-              const container = document.getElementById('searchScreenshots');
-              container.innerHTML = '<span class="loading"></span> Loading screenshots...';
-              try {
-                  const res = await fetch(`https://api.github.com/repos/${repo}/contents/duckduckgo-results`, {
-                      headers: { 'Authorization': 'Bearer ' + token }
-                  });
-                  if (res.ok) {
-                      const files = await res.json();
-                      let html = '';
-                      for (const file of files) {
-                          if (file.name.includes('screenshot_') && file.name.endsWith('.png')) {
-                              html += `<div class="file-item" style="flex-direction:column;align-items:stretch">
-                                  <div style="margin-bottom:5px"><strong>📸 ${file.name}</strong></div>
-                                  <img src="${file.download_url}?raw=true" class="screenshot-img" onclick="window.open('${file.download_url}')">
-                                  <button class="file-download" style="margin-top:10px" onclick="downloadFile('${file.download_url}')">Download</button>
-                              </div>`;
-                          }
-                      }
-                      container.innerHTML = html || 'No screenshots found. Run DuckDuckGo search first.';
-                  } else {
-                      container.innerHTML = 'No screenshots found. Run DuckDuckGo search first.';
-                  }
-              } catch(e) { container.innerHTML = 'Error: ' + e.message; }
-          }
-          
-          function downloadFile(url) {
-              window.open(url, '_blank');
-          }
-          
-          function updateInputs() {
-              const val = document.getElementById('workflowSelect').value;
-              document.getElementById('downloadInputs').style.display = (val === 'download' || val === 'video') ? 'block' : 'none';
-              document.getElementById('browserInputs').style.display = (val === 'browser') ? 'block' : 'none';
-              document.getElementById('searchInputs').style.display = (val === 'search') ? 'block' : 'none';
-          }
-          
-          document.getElementById('workflowSelect').onchange = updateInputs;
-          document.getElementById('runBtn').onclick = () => {
-              const selected = document.getElementById('workflowSelect').value;
-              if (selected === 'download') {
-                  const url = document.getElementById('url').value.trim();
-                  if (!url) { alert('Enter URL'); return; }
-                  runWorkflow('download.yml', { urls: url, password: document.getElementById('password').value }, 'downloads', 'Download File');
-              } else if (selected === 'video') {
-                  const url = document.getElementById('url').value.trim();
-                  if (!url) { alert('Enter video URL'); return; }
-                  runWorkflow('video-downloader.yml', { urls: url, password: document.getElementById('password').value }, 'video-downloads', 'Download Video');
-              } else if (selected === 'browser') {
-                  const url = document.getElementById('browserUrl').value.trim();
-                  if (!url) { alert('Enter website URL'); return; }
-                  runWorkflow('browser.yml', { url: url, action: document.getElementById('browserAction').value }, 'browser-output', 'Web Browser');
-              } else if (selected === 'search') {
-                  const query = document.getElementById('searchQuery').value.trim();
-                  if (!url&#@62) { alert('Enter search query'); return; }
-                  runWorkflow('duckduckgo-search.yml', {
-                      query: query,
-                      search_type: document.getElementById('searchType').value,
-                      num_results: document.getElementById('searchNum').value
-                  }, 'duckduckgo-results', 'DuckDuckGo Search');
-              } else if (selected === 'clean') {
-                  if (confirm('Delete all files in downloads folder?')) {
-                      runWorkflow('clean.yml', { confirm: 'yes' }, 'downloads', 'Clean Downloads');
-                  }
-              }
-          };
+          const TOKEN = '${{ secrets.GH_TOKEN }}';
+          const REPO = 'sinapi1382-alt/Down-2';
+          let activeTask = null, checkInterval = null;
+          function showTab(n){document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));document.getElementById('tab-'+n).classList.add('active');event.target.classList.add('active');if(n==='downloads')loadFiles('downloads','downloadsList');if(n==='browser')loadScreenshots('browser-output','browserScreenshots');if(n==='search')loadScreenshots('duckduckgo-results','searchScreenshots');}
+          function showResult(t,m){const d=document.getElementById('result');d.className='result '+t;d.innerHTML=m;d.style.display='block';}
+          function simulateProgress(f,name){activeTask={name:name,outputFolder:f,progress:0};let p=0;if(checkInterval)clearInterval(checkInterval);checkInterval=setInterval(()=>{p+=5;if(p>=100){clearInterval(checkInterval);activeTask.progress=100;document.getElementById('activeTasks').innerHTML='<div class="file-item"><div><strong>'+name+'</strong><div class="progress-bar"><div class="progress-fill" style="width:100%">100%</div></div><button class="file-download" style="margin-top:10px" onclick="window.open(`https://github.com/${REPO}/tree/main/${f}`)">📂 مشاهده نتیجه</button></div></div>';activeTask=null;}else{activeTask.progress=p;document.getElementById('activeTasks').innerHTML='<div class="file-item"><div><strong>'+name+'</strong><div class="progress-bar"><div class="progress-fill" style="width:'+p+'%">'+p+'%</div></div><span>در حال اجرا...</span></div></div>';}},2000);}
+          async function runWorkflow(w,i,f,n){showResult('info','<span class="loading"></span> در حال اجرا...');simulateProgress(f,n);try{const r=await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/${w}/dispatches`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+TOKEN},body:JSON.stringify({ref:'main',inputs:i})});if(r.ok){showResult('success','✅ شروع شد!');setTimeout(()=>{loadFiles('downloads','downloadsList');loadScreenshots('browser-output','browserScreenshots');loadScreenshots('duckduckgo-results','searchScreenshots');},30000);}else showResult('error','❌ خطا: '+r.status);}catch(e){showResult('error','❌ خطا: '+e.message);}}
+          async function loadFiles(f,e){const c=document.getElementById(e);c.innerHTML='<span class="loading"></span>';try{const r=await fetch(`https://api.github.com/repos/${REPO}/contents/${f}`,{headers:{'Authorization':'Bearer '+TOKEN}});if(r.ok){const files=await r.json();let h='';for(const file of files){if(file.name!=='.gitkeep'){h+='<div class="file-item"><span class="file-name">📄 '+file.name+'</span><button class="file-download" onclick="window.open(`'+file.download_url+'`)">Download</button></div>';}}c.innerHTML=h||'فایلی نیست';}else c.innerHTML='فایلی نیست';}catch(e){c.innerHTML='خطا';}}
+          async function loadScreenshots(f,e){const c=document.getElementById(e);c.innerHTML='<span class="loading"></span>';try{const r=await fetch(`https://api.github.com/repos/${REPO}/contents/${f}`,{headers:{'Authorization':'Bearer '+TOKEN}});if(r.ok){const files=await r.json();let h='';for(const file of files){if(file.name.includes('screenshot_')&&file.name.endsWith('.png')){h+='<div class="file-item" style="flex-direction:column;align-items:stretch"><div><strong>📸 '+file.name+'</strong></div><img src="'+file.download_url+'?raw=true" class="screenshot-img" onclick="window.open(`'+file.download_url+'`)"><button class="file-download" style="margin-top:10px" onclick="window.open(`'+file.download_url+'`)">Download</button></div>';}}c.innerHTML=h||'اسکرین شاتی نیست';}else c.innerHTML='اسکرین شاتی نیست';}catch(e){c.innerHTML='خطا';}}
+          function updateInputs(){const v=document.getElementById('workflowSelect').value;document.getElementById('downloadInputs').style.display=(v==='download')?'block':'none';document.getElementById('browserInputs').style.display=(v==='browser')?'block':'none';document.getElementById('searchInputs').style.display=(v==='search')?'block':'none';}
+          document.getElementById('workflowSelect').onchange=updateInputs;
+          document.getElementById('runBtn').onclick=()=>{const s=document.getElementById('workflowSelect').value;if(s==='download'){const u=document.getElementById('url').value.trim();if(!u){alert('لینک رو وارد کن');return;}runWorkflow('download.yml',{urls:u,password:document.getElementById('password').value},'downloads','دانلود فایل');}
+          else if(s==='browser'){const u=document.getElementById('browserUrl').value.trim();if(!u){alert('آدرس سایت رو وارد کن');return;}runWorkflow('browser.yml',{url:u,action:'both'},'browser-output','مرورگر');}
+          else if(s==='search'){const q=document.getElementById('searchQuery').value.trim();if(!q){alert('عبارت جستجو رو وارد کن');return;}runWorkflow('duckduckgo-search.yml',{query:q,search_type:document.getElementById('searchType').value,num_results:document.getElementById('searchNum').value},'duckduckgo-results','جستجو');}
+          else if(s==='clean'){if(confirm('پاک شود؟'))runWorkflow('clean.yml',{confirm:'yes'},'downloads','پاکسازی');}};
           updateInputs();
           </script>
           </body>
           </html>
-          HTMLEOF
+          EOF
           
       - name: Install Capacitor
         run: |
@@ -408,21 +121,21 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug
           
-      - name: Copy APK to repository folder
+      - name: Copy APK
         run: |
           mkdir -p apk-files
-          cp android/app/build/outputs/apk/debug/app-debug.apk apk-files/downloader-app.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk apk-files/controller-app.apk
           
-      - name: Commit and push APK
+      - name: Commit and push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "actions@github.com"
           git add apk-files/
-          git commit -m "Add latest APK build" || echo "No changes"
+          git commit -m "Add app" || echo "No changes"
           git push
           
-      - name: Upload APK as artifact
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: downloader-app
-          path: apk-files/downloader-app.apk
+          name: controller-app
+          path: apk-files/controller-app.apk
