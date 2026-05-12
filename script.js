@@ -12,10 +12,6 @@ const fs = require('fs');
   const url = process.env.INPUT_URL;
   const action = process.env.INPUT_ACTION;
   const date = new Date().toLocaleString('fa-IR');
-  
-  // ============================================
-  // ساخت timestamp یکتا برای جلوگیری از کش
-  // ============================================
   const timestamp = `${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
   
   console.log(`1. راه‌اندازی مرورگر...`);
@@ -34,34 +30,56 @@ const fs = require('fs');
     console.log(`خطا در بارگذاری: ${e.message}`);
   }
   
+  // ============================================
+  // اسکرول خودکار به پایین صفحه برای لود کامل محتوا
+  // ============================================
+  console.log(`3. اسکرول خودکار به پایین صفحه...`);
+  await page.evaluate(async () => {
+    await new Promise((resolve) => {
+      let totalHeight = 0;
+      const distance = 500;
+      const timer = setInterval(() => {
+        const scrollHeight = document.body.scrollHeight;
+        window.scrollBy(0, distance);
+        totalHeight += distance;
+        if (totalHeight >= scrollHeight) {
+          clearInterval(timer);
+          resolve();
+        }
+      }, 200);
+    });
+  });
+  
+  // کمی صبر برای لود شدن محتوای جدید
+  await new Promise(r => setTimeout(r, 2000));
+  
   let videos = [];
   let images = [];
   
   // اسکرین شات با نام یکتا
   if (action === 'screenshot' || action === 'both') {
-    console.log(`3. گرفتن اسکرین شات...`);
+    console.log(`4. گرفتن اسکرین شات از کل صفحه...`);
     const screenshotName = `screenshot_${timestamp}.png`;
     await page.screenshot({ 
       path: `browser-output/${screenshotName}`, 
       fullPage: true 
     });
-    // همچنین یک نسخه با نام ثابت برای دسترسی آسان
     await page.screenshot({ 
       path: 'browser-output/screenshot.png', 
       fullPage: true 
     });
-    console.log(`✅ اسکرین شات ذخیره شد: ${screenshotName}`);
+    console.log(`✅ اسکرین شات کامل ذخیره شد`);
   }
   
   // ذخیره کامل HTML سایت
-  console.log(`4. ذخیره کامل HTML سایت...`);
+  console.log(`5. ذخیره کامل HTML سایت...`);
   const htmlContent = await page.content();
   fs.writeFileSync('browser-output/site.html', htmlContent);
   console.log(`✅ HTML کامل سایت ذخیره شد (${(htmlContent.length/1024).toFixed(1)} KB)`);
   
   // استخراج لینک‌های مدیا
   if (action === 'media' || action === 'both') {
-    console.log(`5. استخراج لینک‌های مدیا...`);
+    console.log(`6. استخراج لینک‌های مدیا...`);
     
     videos = await page.evaluate(() => {
       const result = [];
@@ -92,29 +110,29 @@ const fs = require('fs');
   
   await browser.close();
   
-  // ساخت فایل HTML نمایشی (با استفاده از عکس دارای timestamp)
-  console.log(`6. ساخت فایل نمایانگر...`);
+  // ============================================
+  // ساخت فایل HTML نمایشی
+  // ============================================
+  console.log(`7. ساخت فایل نمایانگر...`);
   
   let html = `<!DOCTYPE html>
 <html dir="rtl" lang="fa">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>خروجی مرورگر - ${url.substring(0, 50)}</title>
     <style>
         body{font-family:Tahoma;background:#667eea;padding:20px;margin:0}
         .container{max-width:1000px;margin:0 auto}
         .card{background:white;border-radius:20px;padding:25px;margin-bottom:20px;box-shadow:0 10px 40px rgba(0,0,0,0.2)}
         h1{color:#333;text-align:center}
-        h2{color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px}
         .info{background:#f0f0f0;padding:12px;border-radius:10px;margin-bottom:20px;word-break:break-all}
         .link-list{list-style:none;padding:0}
         .link-list li{background:#f8f9fa;margin:8px 0;padding:12px;border-radius:8px;word-break:break-all}
         .link-list a{color:#667eea;text-decoration:none}
         .screenshot-img{max-width:100%;border-radius:10px;border:1px solid #ddd}
-        .badge{background:#28a745;color:white;padding:2px 8px;border-radius:20px;font-size:12px;margin-right:8px}
+        .badge{background:#28a745;color:white;padding:2px 8px;border-radius:20px;font-size:12px}
         .btn{display:inline-block;background:#667eea;color:white;padding:10px 20px;border-radius:10px;text-decoration:none;margin:10px 5px}
-        .btn:hover{background:#764ba2}
         .footer{text-align:center;color:rgba(255,255,255,0.8);font-size:12px;margin-top:20px}
         .iframe-container{background:#f0f0f0;padding:10px;border-radius:10px;margin-top:10px}
         iframe{width:100%;height:500px;border:none;border-radius:8px}
@@ -132,8 +150,8 @@ const fs = require('fs');
             </div>
             
             <div style="text-align:center">
-                <a href="site.html" class="btn" target="_blank">🌍 مشاهده HTML کامل سایت</a>
-                <a href="screenshot.png" class="btn" target="_blank">📸 مشاهده اسکرین شات</a>
+                <a href="site.html" class="btn" target="_blank">🌍 HTML کامل سایت</a>
+                <a href="screenshot.png" class="btn" target="_blank">📸 اسکرین شات</a>
                 <a href="links.txt" class="btn" target="_blank">📋 دانلود لینک‌ها</a>
             </div>
             
@@ -143,10 +161,9 @@ const fs = require('fs');
             </div>`;
   
   if (action === 'screenshot' || action === 'both') {
-    // استفاده از عکس با timestamp برای جلوگیری از کش
-    html += `<div><h3>📸 اسکرین شات (آخرین جستجو)</h3>
+    html += `<div><h3>📸 اسکرین شات کامل صفحه</h3>
              <img src="screenshot_${timestamp}.png" class="screenshot-img" style="max-width:100%">
-             <div class="timestamp-info">⏱️ زمان این اسکرین شات: ${date}</div>
+             <div class="timestamp-info">⏱️ زمان اسکرین شات: ${date}</div>
              </div>`;
   }
   
@@ -164,7 +181,7 @@ const fs = require('fs');
     }
   }
   
-  html += `<div class="footer">ساخته شده با ❤️ | این فایل شامل اسکرین شات، HTML کامل سایت و لینک‌های استخراج شده است</div></div></div></body></html>`;
+  html += `<div class="footer">ساخته شده با ❤️ | اسکرین شات کامل از کل صفحه گرفته شده است</div></div></div></body></html>`;
   
   fs.writeFileSync('browser-output/index.html', html);
   
@@ -174,7 +191,7 @@ const fs = require('fs');
   textContent += `تاریخ: ${date}\n`;
   textContent += `لینک اصلی: ${url}\n\n`;
   textContent += `فایل HTML کامل سایت: site.html\n`;
-  textContent += `اسکرین شات: screenshot.png\n\n`;
+  textContent += `اسکرین شات کامل: screenshot.png\n\n`;
   
   if (videos.length > 0) {
     textContent += `ویدیوها (${videos.length}):\n`;
@@ -189,9 +206,8 @@ const fs = require('fs');
   fs.writeFileSync('browser-output/links.txt', textContent);
   
   console.log(`✅ خروجی نهایی ذخیره شد:`);
-  console.log(`   - site.html : کد HTML کامل سایت (${(htmlContent.length/1024).toFixed(1)} KB)`);
-  console.log(`   - screenshot_${timestamp}.png : اسکرین شات جدید`);
-  console.log(`   - screenshot.png : اسکرین شات (نسخه ثابت)`);
+  console.log(`   - site.html : کد HTML کامل سایت`);
+  console.log(`   - screenshot_${timestamp}.png : اسکرین شات کامل`);
   console.log(`   - index.html : صفحه نمایانگر`);
   console.log(`   - links.txt : لیست لینک‌ها`);
 })();
