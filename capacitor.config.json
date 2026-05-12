@@ -1,0 +1,6 @@
+{
+  "appId": "com.downloader.ghcontrol",
+  "appName": "GitHub Control",
+  "webDir": ".",
+  "bundledWebRuntime": false
+}
