@@ -1,6 +1,5 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs');
-const { exec } = require('child_process');
 
 (async () => {
   // پاک کردن پوشه قبلی
@@ -31,7 +30,7 @@ const { exec } = require('child_process');
     console.log(`خطا در بارگذاری: ${e.message}`);
   }
   
-  // اسکرول خودکار به پایین صفحه برای لود کامل محتوا
+  // اسکرول خودکار به پایین صفحه
   console.log(`3. اسکرول خودکار به پایین صفحه...`);
   await page.evaluate(async () => {
     await new Promise((resolve) => {
@@ -49,15 +48,14 @@ const { exec } = require('child_process');
     });
   });
   
-  // کمی صبر برای لود شدن محتوای جدید
   await new Promise(r => setTimeout(r, 2000));
   
   let videos = [];
   let images = [];
   
-  // اسکرین شات با نام یکتا
+  // اسکرین شات
   if (action === 'screenshot' || action === 'both') {
-    console.log(`4. گرفتن اسکرین شات از کل صفحه...`);
+    console.log(`4. گرفتن اسکرین شات...`);
     const screenshotName = `screenshot_${timestamp}.png`;
     await page.screenshot({ 
       path: `browser-output/${screenshotName}`, 
@@ -67,26 +65,26 @@ const { exec } = require('child_process');
       path: 'browser-output/screenshot.png', 
       fullPage: true 
     });
-    console.log(`✅ اسکرین شات کامل ذخیره شد`);
+    console.log(`✅ اسکرین شات ذخیره شد`);
   }
   
-  // ذخیره کامل HTML سایت
-  console.log(`5. ذخیره کامل HTML سایت...`);
+  // ذخیره HTML
+  console.log(`5. ذخیره HTML سایت...`);
   const htmlContent = await page.content();
   fs.writeFileSync('browser-output/site.html', htmlContent);
-  console.log(`✅ HTML کامل سایت ذخیره شد (${(htmlContent.length/1024).toFixed(1)} KB)`);
+  console.log(`✅ HTML ذخیره شد (${(htmlContent.length/1024).toFixed(1)} KB)`);
   
   // ============================================
   // تبدیل HTML به PDF (قابلیت جدید)
   // ============================================
-  console.log(`6. تبدیل HTML به PDF...`);
-  await new Promise((resolve) => {
-    exec(`wkhtmltopdf --enable-local-file-access --page-size A4 --margin-top 10mm --margin-bottom 10mm browser-output/site.html browser-output/site.pdf`, (error) => {
-      if (error) console.log(`⚠️ خطا در ساخت PDF: ${error.message}`);
-      else console.log(`✅ PDF صفحه ذخیره شد`);
-      resolve();
-    });
+  console.log(`6. تبدیل به PDF...`);
+  await page.pdf({
+    path: 'browser-output/site.pdf',
+    format: 'A4',
+    printBackground: true,
+    margin: { top: '10mm', bottom: '10mm', left: '5mm', right: '5mm' }
   });
+  console.log(`✅ PDF صفحه ذخیره شد`);
   
   // استخراج لینک‌های مدیا
   if (action === 'media' || action === 'both') {
@@ -121,11 +119,28 @@ const { exec } = require('child_process');
   
   await browser.close();
   
-  // ============================================
-  // ساخت فایل HTML نمایشی
-  // ============================================
-  console.log(`8. ساخت فایل نمایانگر...`);
+  // فایل متنی لینک‌ها
+  let textContent = `لیست لینک‌های استخراج شده\n`;
+  textContent += `========================\n`;
+  textContent += `تاریخ: ${date}\n`;
+  textContent += `لینک اصلی: ${url}\n\n`;
+  textContent += `فایل HTML کامل سایت: site.html\n`;
+  textContent += `فایل PDF صفحه: site.pdf\n`;
+  textContent += `اسکرین شات کامل: screenshot.png\n\n`;
   
+  if (videos.length > 0) {
+    textContent += `ویدیوها (${videos.length}):\n`;
+    for (const v of videos) textContent += `${v}\n`;
+    textContent += `\n`;
+  }
+  if (images.length > 0) {
+    textContent += `عکس‌ها (${images.length}):\n`;
+    for (const img of images) textContent += `${img}\n`;
+  }
+  
+  fs.writeFileSync('browser-output/links.txt', textContent);
+  
+  // فایل HTML نمایشی
   let html = `<!DOCTYPE html>
 <html dir="rtl" lang="fa">
 <head>
@@ -196,27 +211,6 @@ const { exec } = require('child_process');
   html += `<div class="footer">ساخته شده با ❤️ | اسکرین شات کامل از کل صفحه گرفته شده است</div></div></div></body></html>`;
   
   fs.writeFileSync('browser-output/index.html', html);
-  
-  // فایل متنی لینک‌ها
-  let textContent = `لیست لینک‌های استخراج شده\n`;
-  textContent += `========================\n`;
-  textContent += `تاریخ: ${date}\n`;
-  textContent += `لینک اصلی: ${url}\n\n`;
-  textContent += `فایل HTML کامل سایت: site.html\n`;
-  textContent += `فایل PDF صفحه: site.pdf\n`;
-  textContent += `اسکرین شات کامل: screenshot.png\n\n`;
-  
-  if (videos.length > 0) {
-    textContent += `ویدیوها (${videos.length}):\n`;
-    for (const v of videos) textContent += `${v}\n`;
-    textContent += `\n`;
-  }
-  if (images.length > 0) {
-    textContent += `عکس‌ها (${images.length}):\n`;
-    for (const img of images) textContent += `${img}\n`;
-  }
-  
-  fs.writeFileSync('browser-output/links.txt', textContent);
   
   console.log(`✅ خروجی نهایی ذخیره شد:`);
   console.log(`   - site.html : کد HTML کامل سایت`);
