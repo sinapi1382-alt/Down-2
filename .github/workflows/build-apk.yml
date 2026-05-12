@@ -40,13 +40,14 @@ jobs:
                   h1{color:#333;text-align:center;margin-bottom:20px;font-size:24px}
                   select,textarea,input{width:100%;padding:12px;margin:10px 0;border:2px solid #ddd;border-radius:10px;font-size:14px}
                   button{width:100%;padding:14px;background:#667eea;color:white;border:none;border-radius:10px;font-size:16px;cursor:pointer}
-                  .result{background:#f8f9fa;padding:15px;border-radius:10px;margin-top:20px;display:none}
+                  .result{background:#f8f9fa;padding:15px;border-radius:10px;margin-top:20px;display:none;word-break:break-all}
                   .success{color:#28a745;background:#d4edda}
                   .error{color:#dc3545;background:#f8d7da}
                   .info{color:#856404;background:#fff3cd}
                   .loading{display:inline-block;width:20px;height:20px;border:3px solid #f3f3f3;border-top:3px solid #667eea;border-radius:50%;animation:spin 1s linear infinite;margin-right:10px;vertical-align:middle}
                   @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
                   .footer{text-align:center;color:rgba(255,255,255,0.8);font-size:11px;margin-top:20px}
+                  .result-link{display:inline-block;margin-top:10px;color:#667eea;text-decoration:none}
               </style>
           </head>
           <body>
@@ -102,7 +103,7 @@ jobs:
               div.style.display = 'block';
           }
           
-          async function runWorkflow(workflow, inputs) {
+          async function runWorkflow(workflow, inputs, outputFolder) {
               showResult('info', '<span class="loading"></span> Running...');
               try {
                   const res = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/${workflow}/dispatches`, {
@@ -113,8 +114,12 @@ jobs:
                       },
                       body: JSON.stringify({ ref: 'main', inputs: inputs })
                   });
-                  if (res.ok) showResult('success', '✅ Workflow started successfully!');
-                  else showResult('error', '❌ Error: ' + res.status);
+                  if (res.ok) {
+                      const resultUrl = `https://github.com/${repo}/tree/main/${outputFolder}`;
+                      showResult('success', '✅ Workflow started successfully!<br><br>📂 <a href="' + resultUrl + '" target="_blank" class="result-link">Click here to see results</a>');
+                  } else {
+                      showResult('error', '❌ Error: ' + res.status);
+                  }
               } catch(e) { showResult('error', '❌ Error: ' + e.message); }
           }
           
@@ -131,15 +136,15 @@ jobs:
               if (selected === 'download') {
                   const url = document.getElementById('url').value.trim();
                   if (!url) { alert('Enter URL'); return; }
-                  runWorkflow('download.yml', { urls: url, password: document.getElementById('password').value });
+                  runWorkflow('download.yml', { urls: url, password: document.getElementById('password').value }, 'downloads');
               } else if (selected === 'video') {
                   const url = document.getElementById('url').value.trim();
                   if (!url) { alert('Enter video URL'); return; }
-                  runWorkflow('video-downloader.yml', { urls: url, password: document.getElementById('password').value });
+                  runWorkflow('video-downloader.yml', { urls: url, password: document.getElementById('password').value }, 'video-downloads');
               } else if (selected === 'browser') {
                   const url = document.getElementById('browserUrl').value.trim();
                   if (!url) { alert('Enter website URL'); return; }
-                  runWorkflow('browser.yml', { url: url, action: document.getElementById('browserAction').value });
+                  runWorkflow('browser.yml', { url: url, action: document.getElementById('browserAction').value }, 'browser-output');
               } else if (selected === 'search') {
                   const query = document.getElementById('searchQuery').value.trim();
                   if (!query) { alert('Enter search query'); return; }
@@ -147,10 +152,10 @@ jobs:
                       query: query,
                       search_type: document.getElementById('searchType').value,
                       num_results: document.getElementById('searchNum').value
-                  });
+                  }, 'duckduckgo-results');
               } else if (selected === 'clean') {
                   if (confirm('Delete all files in downloads folder?')) {
-                      runWorkflow('clean.yml', { confirm: 'yes' });
+                      runWorkflow('clean.yml', { confirm: 'yes' }, 'downloads');
                   }
               }
           };
@@ -181,7 +186,7 @@ jobs:
       - name: Commit and push APK
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "actions@github.com"
+          git config.user.email "actions@github.com"
           git add apk-files/
           git commit -m "Add latest APK build" || echo "No changes"
           git push
