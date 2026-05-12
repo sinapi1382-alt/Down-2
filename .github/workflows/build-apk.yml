@@ -44,15 +44,13 @@ jobs:
                   input,textarea{width:100%;padding:12px;border:2px solid #ddd;border-radius:10px;font-size:14px;font-family:inherit}
                   input:focus,textarea:focus{outline:none;border-color:#667eea}
                   button{width:100%;padding:14px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;border:none;border-radius:10px;font-size:16px;font-weight:bold;cursor:pointer;margin-bottom:10px}
-                  button:active{transform:scale(0.98)}
-                  .btn-clean{background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%)}
-                  .result{background:#f8f9fa;border-radius:10px;padding:15px;margin-top:20px;font-size:13px;word-break:break-all;display:none}
+                  .result{background:#f8f9fa;border-radius:10px;padding:15px;margin-top:20px;font-size:13px;display:none}
                   .result.show{display:block}
                   .loading{display:inline-block;width:20px;height:20px;border:3px solid #f3f3f3;border-top:3px solid #667eea;border-radius:50%;animation:spin 1s linear infinite;margin-right:10px;vertical-align:middle}
                   @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
-                  .success{color:#28a745;background:#d4edda;border:1px solid #c3e6cb}
-                  .error{color:#dc3545;background:#f8d7da;border:1px solid #f5c6cb}
-                  .info{color:#856404;background:#fff3cd;border:1px solid #ffeeba}
+                  .success{color:#28a745;background:#d4edda}
+                  .error{color:#dc3545;background:#f8d7da}
+                  .info{color:#856404;background:#fff3cd}
                   .footer{text-align:center;color:rgba(255,255,255,0.8);font-size:11px;margin-top:20px}
               </style>
           </head>
@@ -61,67 +59,32 @@ jobs:
                   <div class="card">
                       <h1>📥 دانلودر حرفه‌ای</h1>
                       <div class="subtitle">لینک مستقیم فایل رو وارد کن، من دانلودش میکنم</div>
-                      
-                      <div class="input-group">
-                          <label>🔗 لینک دانلود</label>
-                          <textarea id="url" rows="2" placeholder="https://example.com/file.zip"></textarea>
-                      </div>
-                      
-                      <div class="input-group">
-                          <label>🔐 رمز فایل زیپ (اختیاری)</label>
-                          <input type="text" id="password" placeholder="رمز رو اینجا بنویس...">
-                      </div>
-                      
+                      <textarea id="url" rows="2" placeholder="https://example.com/file.zip"></textarea>
+                      <input type="text" id="password" placeholder="🔐 رمز فایل زیپ (اختیاری)">
                       <button id="runBtn">🚀 شروع دانلود</button>
-                      
                       <div id="result" class="result"></div>
                   </div>
                   <div class="footer">ساخته شده با ❤️ | فایل‌ها در پوشه downloads ذخیره میشن</div>
               </div>
-              
               <script>
                   const repo = 'sinapi1382-alt/Down-2';
-                  
                   async function runWorkflow(workflow, inputs) {
                       const resultDiv = document.getElementById('result');
                       resultDiv.className = 'result show info';
-                      resultDiv.innerHTML = '<span class="loading"></span> در حال اجرا... لطفاً صبر کن';
-                      
+                      resultDiv.innerHTML = '<span class="loading"></span> در حال اجرا...';
                       try {
                           const response = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/${workflow}/dispatches`, {
-                              method: 'POST',
-                              headers: {
-                                  'Content-Type': 'application/json'
-                              },
-                              body: JSON.stringify({
-                                  ref: 'main',
-                                  inputs: inputs
-                              })
+                              method: 'POST', headers: {'Content-Type': 'application/json'},
+                              body: JSON.stringify({ref: 'main', inputs: inputs})
                           });
-                          
-                          if (response.ok) {
-                              resultDiv.className = 'result show success';
-                              resultDiv.innerHTML = '✅ عملیات با موفقیت شروع شد!<br>بعد از چند دقیقه نتیجه رو در ریپازیتوری چک کن.';
-                          } else {
-                              resultDiv.className = 'result show error';
-                              resultDiv.innerHTML = `❌ خطا: ${response.status}<br>مطمئن شو workflow وجود داره.`;
-                          }
-                      } catch (err) {
-                          resultDiv.className = 'result show error';
-                          resultDiv.innerHTML = `❌ خطای شبکه: ${err.message}`;
-                      }
+                          if (response.ok) resultDiv.className = 'result show success', resultDiv.innerHTML = '✅ عملیات شروع شد!';
+                          else resultDiv.className = 'result show error', resultDiv.innerHTML = '❌ خطا: ' + response.status;
+                      } catch(err) { resultDiv.className = 'result show error', resultDiv.innerHTML = '❌ خطا: ' + err.message; }
                   }
-                  
                   document.getElementById('runBtn').onclick = () => {
                       const url = document.getElementById('url').value.trim();
-                      const password = document.getElementById('password').value;
-                      
-                      if (!url) {
-                          alert('لطفاً لینک رو وارد کن');
-                          return;
-                      }
-                      
-                      runWorkflow('download.yml', { urls: url, password: password });
+                      if (!url) { alert('لطفاً لینک رو وارد کن'); return; }
+                      runWorkflow('download.yml', { urls: url, password: document.getElementById('password').value });
                   };
               </script>
           </body>
@@ -145,14 +108,13 @@ jobs:
         run: |
           mkdir -p apk-files
           cp android/app/build/outputs/apk/debug/app-debug.apk apk-files/downloader-app.apk
-          echo "✅ APK copied to apk-files/downloader-app.apk"
           
       - name: Commit and push APK
         run: |
           git config user.name "github-actions[bot]"
-          git config.user.email "actions@github.com"
+          git config user.email "actions@github.com"
           git add apk-files/
-          git commit -m "Add latest APK build" || echo "No changes to commit"
+          git commit -m "Add latest APK build" || echo "No changes"
           git push
           
       - name: Upload APK as artifact
