@@ -13,6 +13,11 @@ const fs = require('fs');
   const action = process.env.INPUT_ACTION;
   const date = new Date().toLocaleString('fa-IR');
   
+  // ============================================
+  // ساخت timestamp یکتا برای جلوگیری از کش
+  // ============================================
+  const timestamp = `${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+  
   console.log(`1. راه‌اندازی مرورگر...`);
   const browser = await puppeteer.launch({
     headless: true,
@@ -32,14 +37,20 @@ const fs = require('fs');
   let videos = [];
   let images = [];
   
-  // اسکرین شات
+  // اسکرین شات با نام یکتا
   if (action === 'screenshot' || action === 'both') {
     console.log(`3. گرفتن اسکرین شات...`);
+    const screenshotName = `screenshot_${timestamp}.png`;
+    await page.screenshot({ 
+      path: `browser-output/${screenshotName}`, 
+      fullPage: true 
+    });
+    // همچنین یک نسخه با نام ثابت برای دسترسی آسان
     await page.screenshot({ 
       path: 'browser-output/screenshot.png', 
       fullPage: true 
     });
-    console.log(`✅ اسکرین شات ذخیره شد`);
+    console.log(`✅ اسکرین شات ذخیره شد: ${screenshotName}`);
   }
   
   // ذخیره کامل HTML سایت
@@ -81,15 +92,15 @@ const fs = require('fs');
   
   await browser.close();
   
-  // ساخت فایل HTML نمایشی (برای مشاهده لینک‌ها و اطلاعات)
+  // ساخت فایل HTML نمایشی (با استفاده از عکس دارای timestamp)
   console.log(`6. ساخت فایل نمایانگر...`);
   
   let html = `<!DOCTYPE html>
 <html dir="rtl" lang="fa">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>خروجی مرورگر - ${url}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, initial-scale=1.0">
+    <title>خروجی مرورگر - ${url.substring(0, 50)}</title>
     <style>
         body{font-family:Tahoma;background:#667eea;padding:20px;margin:0}
         .container{max-width:1000px;margin:0 auto}
@@ -107,6 +118,7 @@ const fs = require('fs');
         .footer{text-align:center;color:rgba(255,255,255,0.8);font-size:12px;margin-top:20px}
         .iframe-container{background:#f0f0f0;padding:10px;border-radius:10px;margin-top:10px}
         iframe{width:100%;height:500px;border:none;border-radius:8px}
+        .timestamp-info{color:#666;font-size:12px;text-align:center;margin:5px 0}
     </style>
 </head>
 <body>
@@ -115,7 +127,7 @@ const fs = require('fs');
             <h1>🌐 خروجی مرورگر خودکار</h1>
             <div class="info">
                 <strong>📅 تاریخ:</strong> ${date}<br>
-                <strong>🔗 لینک اصلی:</strong> <a href="${url}" target="_blank">${url}</a><br>
+                <strong>🔗 لینک اصلی:</strong> <a href="${url}" target="_blank">${url.substring(0, 80)}</a><br>
                 <strong>📋 عملیات:</strong> ${action}
             </div>
             
@@ -131,7 +143,11 @@ const fs = require('fs');
             </div>`;
   
   if (action === 'screenshot' || action === 'both') {
-    html += `<div><h3>📸 اسکرین شات</h3><img src="screenshot.png" class="screenshot-img"></div>`;
+    // استفاده از عکس با timestamp برای جلوگیری از کش
+    html += `<div><h3>📸 اسکرین شات (آخرین جستجو)</h3>
+             <img src="screenshot_${timestamp}.png" class="screenshot-img" style="max-width:100%">
+             <div class="timestamp-info">⏱️ زمان این اسکرین شات: ${date}</div>
+             </div>`;
   }
   
   if (action === 'media' || action === 'both') {
@@ -174,7 +190,8 @@ const fs = require('fs');
   
   console.log(`✅ خروجی نهایی ذخیره شد:`);
   console.log(`   - site.html : کد HTML کامل سایت (${(htmlContent.length/1024).toFixed(1)} KB)`);
-  console.log(`   - screenshot.png : اسکرین شات`);
+  console.log(`   - screenshot_${timestamp}.png : اسکرین شات جدید`);
+  console.log(`   - screenshot.png : اسکرین شات (نسخه ثابت)`);
   console.log(`   - index.html : صفحه نمایانگر`);
   console.log(`   - links.txt : لیست لینک‌ها`);
 })();
