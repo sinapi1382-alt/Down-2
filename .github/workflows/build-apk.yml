@@ -1,4 +1,4 @@
-name: ساخت APK
+name: Build APK
 
 on:
   workflow_dispatch:
@@ -6,76 +6,65 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - name: دریافت کدها
-        uses: actions/checkout@v4
-
-      - name: نصب Node.js
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-
-      - name: نصب Java
+          node-version: '18'
+          
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
-
-      - name: نصب Capacitor
+          
+      - name: Create web files
+        run: |
+          mkdir -p www
+          cat > www/index.html << 'HTMLEOF'
+          <!DOCTYPE html>
+          <html>
+          <head><meta charset="UTF-8"><title>Downloader</title></head>
+          <body style="font-family:Tahoma;background:#667eea;text-align:center;padding:50px">
+          <h1>📥 Downloader</h1>
+          <p>App is ready</p>
+          </body>
+          </html>
+          HTMLEOF
+          
+      - name: Install Capacitor
         run: |
           npm init -y
           npm install @capacitor/core @capacitor/android @capacitor/cli
-
-      - name: ساخت پوشه www
-        run: mkdir -p www
-
-      - name: ساخت index.html
+          
+      - name: Build Android Project
         run: |
-          echo '<!DOCTYPE html>
-          <html dir="rtl">
-          <head>
-          <meta charset="UTF-8">
-          <title>Downloader</title>
-          <style>
-          body{font-family:Tahoma;background:#667eea;padding:20px}
-          .card{background:white;border-radius:20px;padding:25px;max-width:500px;margin:0 auto}
-          h1{color:#333;text-align:center}
-          input{width:100%;padding:12px;margin:10px 0;border-radius:10px;border:1px solid #ddd}
-          button{width:100%;padding:14px;background:#667eea;color:white;border:none;border-radius:10px}
-          </style>
-          </head>
-          <body>
-          <div class="card">
-          <h1>Downloader</h1>
-          <input type="text" id="url" placeholder="Enter URL">
-          <button onclick="run()">Download</button>
-          </div>
-          <script>
-          function run(){
-          var url=document.getElementById("url").value;
-          fetch("https://api.github.com/repos/sinapi1382-alt/Down-2/actions/workflows/download.yml/dispatches",{
-          method:"POST",
-          headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({ref:"main",inputs:{urls:url}})
-          }).then(function(r){alert(r.ok?"Started!":"Error");});
-          }
-          </script>
-          </body>
-          </html>' > www/index.html
-
-      - name: ساخت پروژه Capacitor
-        run: |
-          npx cap init "Downloader" "com.downloader.app" --web-dir=www
+          npx cap init MyApp com.example.myapp --web-dir=www
           npx cap add android
-
-      - name: ساخت APK
-        run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
-
-      - name: آپلود APK
+          
+      - name: Copy APK to repository folder
+        run: |
+          mkdir -p apk-files
+          cp android/app/build/outputs/apk/debug/app-debug.apk apk-files/downloader-app.apk
+          echo "✅ APK copied to apk-files/downloader-app.apk"
+          
+      - name: Commit and push APK
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "actions@github.com"
+          git add apk-files/
+          git commit -m "Add latest APK build" || echo "No changes to commit"
+          git push
+          
+      - name: Upload APK as artifact
         uses: actions/upload-artifact@v4
         with:
           name: downloader-app
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: apk-files/downloader-app.apk
