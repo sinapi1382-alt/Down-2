@@ -186,7 +186,7 @@ jobs:
       - name: Commit and push APK
         run: |
           git config user.name "github-actions[bot]"
-          git config.user.email "actions@github.com"
+          git config user.email "actions@github.com"
           git add apk-files/
           git commit -m "Add latest APK build" || echo "No changes"
           git push
