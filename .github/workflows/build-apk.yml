@@ -51,7 +51,7 @@ jobs:
                   .file-item{background:white;padding:12px;margin:8px 0;border-radius:8px;display:flex;justify-content:space-between;align-items:center;border:1px solid #ddd}
                   .file-name{color:#333;word-break:break-all;flex:1;font-size:12px}
                   .file-download{background:#28a745;color:white;border:none;padding:8px 15px;border-radius:8px;cursor:pointer}
-                  .screenshot-img{max-width:100%;border-radius:10px;margin-top:10px;border:1px solid #ddd}
+                  .screenshot-img{max-width:100%;border-radius:10px;margin-top:10px;border:1px solid #ddd;cursor:pointer}
                   .refresh-btn{background:#6c757d;margin:10px 0;padding:10px}
                   .tab{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:20px}
                   .tab-btn{background:#e9ecef;color:#333;flex:1;padding:10px;border:none;border-radius:10px;cursor:pointer;font-size:12px}
@@ -59,6 +59,12 @@ jobs:
                   .tab-content{display:none}
                   .tab-content.active{display:block}
                   .section-title{background:#f0f0f0;padding:10px;border-radius:10px;margin:15px 0 10px 0;font-weight:bold}
+                  .progress-bar{background:#e9ecef;border-radius:10px;margin:15px 0;height:25px;overflow:hidden}
+                  .progress-fill{background:#28a745;width:0%;height:100%;transition:width 0.5s;color:white;text-align:center;font-size:12px;line-height:25px}
+                  .status-badge{padding:5px 10px;border-radius:20px;font-size:12px;margin-left:10px}
+                  .status-running{background:#ffc107;color:#333}
+                  .status-done{background:#28a745;color:white}
+                  .view-result-btn{background:#667eea;color:white;border:none;padding:10px;border-radius:10px;margin-top:10px;cursor:pointer}
               </style>
           </head>
           <body>
@@ -68,6 +74,7 @@ jobs:
           
           <div class="tab">
               <button class="tab-btn active" onclick="showTab('run')">🚀 اجرا</button>
+              <button class="tab-btn" onclick="showTab('progress')">📊 در حال اجرا</button>
               <button class="tab-btn" onclick="showTab('downloads')">📥 دانلودها</button>
               <button class="tab-btn" onclick="showTab('browser')">🌐 مرورگر</button>
               <button class="tab-btn" onclick="showTab('search')">🔍 داک داک گو</button>
@@ -112,28 +119,31 @@ jobs:
           <div id="result" class="result"></div>
           </div>
           
+          <!-- تب در حال اجرا با درصد -->
+          <div id="tab-progress" class="tab-content">
+              <div id="activeTasks">
+                  <p>No active tasks. Run a workflow from the "Run" tab.</p>
+              </div>
+          </div>
+          
           <!-- تب دانلود فایل -->
           <div id="tab-downloads" class="tab-content">
               <button class="refresh-btn" onclick="loadFiles('downloads', 'downloadsList')">🔄 Refresh</button>
               <div id="downloadsList" class="file-list">Loading...</div>
           </div>
           
-          <!-- تب مرورگر -->
+          <!-- تب مرورگر (فقط اسکرین شات‌های یکتا) -->
           <div id="tab-browser" class="tab-content">
-              <button class="refresh-btn" onclick="loadFiles('browser-output', 'browserList')">🔄 Refresh</button>
-              <div class="section-title">📸 اسکرین شات‌ها</div>
+              <button class="refresh-btn" onclick="loadBrowserScreenshots()">🔄 Refresh</button>
+              <div class="section-title">📸 اسکرین شات‌های مرورگر</div>
               <div id="browserScreenshots" class="file-list">Loading...</div>
-              <div class="section-title">📄 فایل‌های HTML</div>
-              <div id="browserFiles" class="file-list">Loading...</div>
           </div>
           
-          <!-- تب داک داک گو -->
+          <!-- تب داک داک گو (فقط اسکرین شات‌های یکتا) -->
           <div id="tab-search" class="tab-content">
-              <button class="refresh-btn" onclick="loadFiles('duckduckgo-results', 'searchList')">🔄 Refresh</button>
-              <div class="section-title">📸 اسکرین شات‌ها</div>
+              <button class="refresh-btn" onclick="loadSearchScreenshots()">🔄 Refresh</button>
+              <div class="section-title">📸 اسکرین شات‌های داک داک گو</div>
               <div id="searchScreenshots" class="file-list">Loading...</div>
-              <div class="section-title">📄 لینک‌ها و نتایج</div>
-              <div id="searchFiles" class="file-list">Loading...</div>
           </div>
           
           <!-- تب ویدیوها -->
@@ -150,6 +160,9 @@ jobs:
           const repo = 'sinapi1382-alt/Down-2';
           const token = '${{ secrets.GH_TOKEN }}';
           
+          let activeTask = null;
+          let checkInterval = null;
+          
           function showTab(tabName) {
               document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
               document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -157,9 +170,10 @@ jobs:
               event.target.classList.add('active');
               
               if (tabName === 'downloads') loadFiles('downloads', 'downloadsList');
-              if (tabName === 'browser') loadBrowserFiles();
-              if (tabName === 'search') loadSearchFiles();
+              if (tabName === 'browser') loadBrowserScreenshots();
+              if (tabName === 'search') loadSearchScreenshots();
               if (tabName === 'video') loadFiles('video-downloads', 'videoList');
+              if (tabName === 'progress') updateProgressTab();
           }
           
           function showResult(type, msg) {
@@ -169,8 +183,72 @@ jobs:
               div.style.display = 'block';
           }
           
-          async function runWorkflow(workflow, inputs) {
+          function updateProgressTab() {
+              const container = document.getElementById('activeTasks');
+              if (activeTask) {
+                  container.innerHTML = `
+                      <div class="file-item" style="flex-direction:column;align-items:stretch">
+                          <div style="margin-bottom:10px"><strong>📥 ${activeTask.name}</strong></div>
+                          <div class="progress-bar">
+                              <div class="progress-fill" style="width:${activeTask.progress}%">${activeTask.progress}%</div>
+                          </div>
+                          <div style="margin-top:10px">
+                              Status: <span class="status-badge status-running">Running...</span>
+                          </div>
+                          <button class="view-result-btn" onclick="viewResult()">📂 مشاهده نتیجه</button>
+                      </div>
+                  `;
+              } else {
+                  container.innerHTML = '<p>No active tasks. Run a workflow from the "Run" tab.</p>';
+              }
+          }
+          
+          function viewResult() {
+              if (activeTask && activeTask.outputFolder) {
+                  window.open(`https://github.com/${repo}/tree/main/${activeTask.outputFolder}`, '_blank');
+              }
+          }
+          
+          function simulateProgress(outputFolder, taskName) {
+              activeTask = { name: taskName, outputFolder: outputFolder, progress: 0 };
+              updateProgressTab();
+              
+              let progress = 0;
+              if (checkInterval) clearInterval(checkInterval);
+              
+              checkInterval = setInterval(() => {
+                  progress += 5;
+                  if (progress >= 100) {
+                      clearInterval(checkInterval);
+                      if (activeTask) activeTask.progress = 100;
+                      updateProgressTab();
+                      const container = document.getElementById('activeTasks');
+                      if (container) {
+                          const span = container.querySelector('.status-badge');
+                          if (span) {
+                              span.className = 'status-badge status-done';
+                              span.textContent = 'Completed!';
+                          }
+                      }
+                      setTimeout(() => {
+                          if (activeTask) activeTask = null;
+                          updateProgressTab();
+                          loadFiles('downloads', 'downloadsList');
+                          loadBrowserScreenshots();
+                          loadSearchScreenshots();
+                          loadFiles('video-downloads', 'videoList');
+                      }, 3000);
+                  } else {
+                      if (activeTask) activeTask.progress = progress;
+                      updateProgressTab();
+                  }
+              }, 2000);
+          }
+          
+          async function runWorkflow(workflow, inputs, outputFolder, taskName) {
               showResult('info', '<span class="loading"></span> Running...');
+              simulateProgress(outputFolder, taskName);
+              
               try {
                   const res = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/${workflow}/dispatches`, {
                       method: 'POST',
@@ -178,11 +256,19 @@ jobs:
                       body: JSON.stringify({ ref: 'main', inputs: inputs })
                   });
                   if (res.ok) {
-                      showResult('success', '✅ Started! Check the relevant tab after 1-2 minutes.');
+                      showResult('success', '✅ Started! Check "Progress" tab.');
                   } else {
                       showResult('error', '❌ Error: ' + res.status);
+                      clearInterval(checkInterval);
+                      activeTask = null;
+                      updateProgressTab();
                   }
-              } catch(e) { showResult('error', '❌ Error: ' + e.message); }
+              } catch(e) { 
+                  showResult('error', '❌ Error: ' + e.message);
+                  clearInterval(checkInterval);
+                  activeTask = null;
+                  updateProgressTab();
+              }
           }
           
           async function loadFiles(folder, elementId) {
@@ -198,16 +284,10 @@ jobs:
                       let html = '';
                       for (const file of files) {
                           if (file.name !== '.gitkeep') {
-                              const isImage = file.name.match(/\.(png|jpg|jpeg|gif)$/i);
                               html += `<div class="file-item">
                                   <span class="file-name">📄 ${file.name}</span>
                                   <button class="file-download" onclick="downloadFile('${file.download_url}')">Download</button>
                               </div>`;
-                              if (isImage) {
-                                  html += `<div class="file-item" style="flex-direction:column">
-                                      <img src="${file.download_url}?raw=true" class="screenshot-img" onclick="window.open('${file.download_url}')">
-                                  </div>`;
-                              }
                           }
                       }
                       container.innerHTML = html || 'No files found. Run a workflow first.';
@@ -217,14 +297,56 @@ jobs:
               } catch(e) { container.innerHTML = 'Error: ' + e.message; }
           }
           
-          async function loadBrowserFiles() {
-              await loadFiles('browser-output', 'browserScreenshots');
-              await loadFiles('browser-output', 'browserFiles');
+          async function loadBrowserScreenshots() {
+              const container = document.getElementById('browserScreenshots');
+              container.innerHTML = '<span class="loading"></span> Loading screenshots...';
+              try {
+                  const res = await fetch(`https://api.github.com/repos/${repo}/contents/browser-output`, {
+                      headers: { 'Authorization': 'Bearer ' + token }
+                  });
+                  if (res.ok) {
+                      const files = await res.json();
+                      let html = '';
+                      for (const file of files) {
+                          if (file.name.includes('screenshot_') && file.name.endsWith('.png')) {
+                              html += `<div class="file-item" style="flex-direction:column;align-items:stretch">
+                                  <div style="margin-bottom:5px"><strong>📸 ${file.name}</strong></div>
+                                  <img src="${file.download_url}?raw=true" class="screenshot-img" onclick="window.open('${file.download_url}')">
+                                  <button class="file-download" style="margin-top:10px" onclick="downloadFile('${file.download_url}')">Download</button>
+                              </div>`;
+                          }
+                      }
+                      container.innerHTML = html || 'No screenshots found. Run Browser workflow first.';
+                  } else {
+                      container.innerHTML = 'No screenshots found. Run Browser workflow first.';
+                  }
+              } catch(e) { container.innerHTML = 'Error: ' + e.message; }
           }
           
-          async function loadSearchFiles() {
-              await loadFiles('duckduckgo-results', 'searchScreenshots');
-              await loadFiles('duckduckgo-results', 'searchFiles');
+          async function loadSearchScreenshots() {
+              const container = document.getElementById('searchScreenshots');
+              container.innerHTML = '<span class="loading"></span> Loading screenshots...';
+              try {
+                  const res = await fetch(`https://api.github.com/repos/${repo}/contents/duckduckgo-results`, {
+                      headers: { 'Authorization': 'Bearer ' + token }
+                  });
+                  if (res.ok) {
+                      const files = await res.json();
+                      let html = '';
+                      for (const file of files) {
+                          if (file.name.includes('screenshot_') && file.name.endsWith('.png')) {
+                              html += `<div class="file-item" style="flex-direction:column;align-items:stretch">
+                                  <div style="margin-bottom:5px"><strong>📸 ${file.name}</strong></div>
+                                  <img src="${file.download_url}?raw=true" class="screenshot-img" onclick="window.open('${file.download_url}')">
+                                  <button class="file-download" style="margin-top:10px" onclick="downloadFile('${file.download_url}')">Download</button>
+                              </div>`;
+                          }
+                      }
+                      container.innerHTML = html || 'No screenshots found. Run DuckDuckGo search first.';
+                  } else {
+                      container.innerHTML = 'No screenshots found. Run DuckDuckGo search first.';
+                  }
+              } catch(e) { container.innerHTML = 'Error: ' + e.message; }
           }
           
           function downloadFile(url) {
@@ -244,26 +366,26 @@ jobs:
               if (selected === 'download') {
                   const url = document.getElementById('url').value.trim();
                   if (!url) { alert('Enter URL'); return; }
-                  runWorkflow('download.yml', { urls: url, password: document.getElementById('password').value });
+                  runWorkflow('download.yml', { urls: url, password: document.getElementById('password').value }, 'downloads', 'Download File');
               } else if (selected === 'video') {
                   const url = document.getElementById('url').value.trim();
                   if (!url) { alert('Enter video URL'); return; }
-                  runWorkflow('video-downloader.yml', { urls: url, password: document.getElementById('password').value });
+                  runWorkflow('video-downloader.yml', { urls: url, password: document.getElementById('password').value }, 'video-downloads', 'Download Video');
               } else if (selected === 'browser') {
                   const url = document.getElementById('browserUrl').value.trim();
                   if (!url) { alert('Enter website URL'); return; }
-                  runWorkflow('browser.yml', { url: url, action: document.getElementById('browserAction').value });
+                  runWorkflow('browser.yml', { url: url, action: document.getElementById('browserAction').value }, 'browser-output', 'Web Browser');
               } else if (selected === 'search') {
                   const query = document.getElementById('searchQuery').value.trim();
-                  if (!query) { alert('Enter search query'); return; }
+                  if (!url&#@62) { alert('Enter search query'); return; }
                   runWorkflow('duckduckgo-search.yml', {
                       query: query,
                       search_type: document.getElementById('searchType').value,
                       num_results: document.getElementById('searchNum').value
-                  });
+                  }, 'duckduckgo-results', 'DuckDuckGo Search');
               } else if (selected === 'clean') {
                   if (confirm('Delete all files in downloads folder?')) {
-                      runWorkflow('clean.yml', { confirm: 'yes' });
+                      runWorkflow('clean.yml', { confirm: 'yes' }, 'downloads', 'Clean Downloads');
                   }
               }
           };
