@@ -1,0 +1,133 @@
+name: Final Test APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          
+      - name: Create minimal app
+        run: |
+          mkdir -p www
+          cat > www/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>API Test</title>
+              <style>
+                  body{font-family:Arial;background:#667eea;padding:20px;margin:0}
+                  .card{background:white;border-radius:20px;padding:25px;max-width:500px;margin:0 auto}
+                  input,textarea{width:100%;padding:12px;margin:10px 0;border:1px solid #ddd;border-radius:10px}
+                  button{width:100%;padding:14px;background:#667eea;color:white;border:none;border-radius:10px;font-size:16px}
+                  .result{padding:15px;border-radius:10px;margin-top:20px}
+                  .success{background:#d4edda;color:#155724}
+                  .error{background:#f8d7da;color:#721c24}
+              </style>
+          </head>
+          <body>
+          <div class="card">
+              <h1>🔧 GitHub API Test</h1>
+              <textarea id="url" rows="2" placeholder="Enter URL to download"></textarea>
+              <button onclick="testAPI()">▶️ Test API</button>
+              <div id="result" class="result"></div>
+          </div>
+          
+          <script>
+          const TOKEN = '${{ secrets.GH_TOKEN }}';
+          const REPO = 'sinapi1382-alt/Down-2';
+          
+          async function testAPI() {
+              const url = document.getElementById('url').value.trim();
+              const resultDiv = document.getElementById('result');
+              
+              if (!url) {
+                  resultDiv.className = 'result error';
+                  resultDiv.innerHTML = '❌ Please enter a URL';
+                  return;
+              }
+              
+              resultDiv.className = 'result';
+              resultDiv.innerHTML = '⏳ Sending request to GitHub API...';
+              
+              try {
+                  console.log('Token exists:', !!TOKEN);
+                  console.log('Token length:', TOKEN ? TOKEN.length : 0);
+                  
+                  const response = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/download.yml/dispatches`, {
+                      method: 'POST',
+                      headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': 'Bearer ' + TOKEN,
+                          'Accept': 'application/vnd.github.v3+json'
+                      },
+                      body: JSON.stringify({
+                          ref: 'main',
+                          inputs: { urls: url }
+                      })
+                  });
+                  
+                  if (response.ok) {
+                      resultDiv.className = 'result success';
+                      resultDiv.innerHTML = '✅ SUCCESS! Workflow started.<br>Check your GitHub repo in 1-2 minutes.';
+                  } else {
+                      const errorText = await response.text();
+                      resultDiv.className = 'result error';
+                      resultDiv.innerHTML = `❌ ERROR ${response.status}: ${response.statusText}<br><small>${errorText.substring(0, 200)}</small>`;
+                  }
+              } catch(err) {
+                  resultDiv.className = 'result error';
+                  resultDiv.innerHTML = `❌ NETWORK ERROR: ${err.message}<br>Check your internet connection.`;
+              }
+          }
+          </script>
+          </body>
+          </html>
+          EOF
+          
+      - name: Build APK
+        run: |
+          npm init -y
+          npm install @capacitor/core @capacitor/android @capacitor/cli
+          npx cap init TestApp com.test.app --web-dir=www
+          npx cap add android
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+          cd ..
+          
+      - name: Copy APK
+        run: |
+          mkdir -p apk-files
+          cp android/app/build/outputs/apk/debug/app-debug.apk apk-files/final-test.apk
+          
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "actions@github.com"
+          git add apk-files/
+          git commit -m "Add final test APK" || echo "No changes"
+          git push
+          
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-test
+          path: apk-files/final-test.apk
