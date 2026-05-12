@@ -82,7 +82,11 @@ jobs:
                   <option value="clean">🧹 پاکسازی پوشه</option>
               </select>
               <div id="downloadInputs"><textarea id="url" rows="2" placeholder="لینک دانلود"></textarea><input type="text" id="password" placeholder="رمز (اختیاری)"></div>
-              <div id="videoInputs" style="display:none"><textarea id="videoUrl" rows="2" placeholder="لینک ویدیو"></textarea><input type="text" id="videoPassword" placeholder="رمز (اختیاری)"></div>
+              <div id="videoInputs" style="display:none">
+                  <textarea id="videoUrl" rows="2" placeholder="لینک ویدیو"></textarea>
+                  <input type="text" id="videoPassword" placeholder="رمز (اختیاری)">
+                  <input type="text" id="videoReferer" placeholder="Referer (لینک صفحه اصلی ویدیو - اختیاری)">
+              </div>
               <div id="browserInputs" style="display:none"><textarea id="browserUrl" rows="2" placeholder="آدرس سایت"></textarea></div>
               <div id="searchInputs" style="display:none"><input type="text" id="searchQuery" placeholder="عبارت جستجو"><input type="number" id="searchNum" value="15" placeholder="تعداد نتایج"><select id="searchType"><option value="all">همه موارد</option><option value="videos">ویدیوها</option><option value="images">عکس‌ها</option></select></div>
               <button id="runBtn">🚀 اجرا</button>
@@ -230,7 +234,11 @@ jobs:
               else if(s==='video'){
                   const u=document.getElementById('videoUrl').value.trim();
                   if(!u){alert('لینک ویدیو رو وارد کن');return;}
-                  runWorkflow('video-downloader.yml',{urls:u,password:document.getElementById('videoPassword').value},'video-downloads','دانلود ویدیو');
+                  runWorkflow('video-downloader.yml',{
+                      urls:u,
+                      password:document.getElementById('videoPassword').value,
+                      referer:document.getElementById('videoReferer').value
+                  },'video-downloads','دانلود ویدیو');
               }
               else if(s==='browser'){
                   const u=document.getElementById('browserUrl').value.trim();
