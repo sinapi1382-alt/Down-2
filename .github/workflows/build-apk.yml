@@ -26,64 +26,42 @@ jobs:
           npm init -y
           npm install @capacitor/core @capacitor/android @capacitor/cli
 
-      - name: ساخت پوشه www و کپی فایل‌ها
+      - name: ساخت پوشه www
+        run: mkdir -p www
+
+      - name: ساخت index.html
         run: |
-          mkdir -p www
-          cat > www/index.html << 'EOF'
-<!DOCTYPE html>
-<html dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>دانلودر حرفه‌ای</title>
-    <style>
-        body{font-family:Tahoma;background:#667eea;padding:20px;margin:0}
-        .container{max-width:600px;margin:0 auto}
-        .card{background:white;border-radius:20px;padding:25px}
-        h1{color:#333;text-align:center;font-size:24px}
-        input,textarea{width:100%;padding:12px;margin:10px 0;border-radius:10px;border:1px solid #ddd}
-        button{width:100%;padding:14px;background:#667eea;color:white;border:none;border-radius:10px;font-size:16px;margin:10px 0}
-        .result{background:#f8f9fa;padding:15px;border-radius:10px;margin-top:15px;display:none}
-        .footer{text-align:center;color:white;margin-top:20px}
-    </style>
-</head>
-<body>
-<div class="container">
-<div class="card">
-<h1>📥 دانلودر حرفه‌ای</h1>
-<p style="text-align:center">لینک فایل رو وارد کن</p>
-<input type="text" id="url" placeholder="https://example.com/file.zip">
-<input type="text" id="password" placeholder="رمز (اختیاری)">
-<button onclick="run()">🚀 شروع دانلود</button>
-<div id="result" class="result"></div>
-</div>
-<div class="footer">ساخته شده با ❤️</div>
-</div>
-<script>
-function run(){
-    var url=document.getElementById('url').value;
-    var pass=document.getElementById('password').value;
-    var result=document.getElementById('result');
-    result.style.display='block';
-    result.innerHTML='<span>⏳ در حال اجرا...</span>';
-    fetch('https://api.github.com/repos/sinapi1382-alt/Down-2/actions/workflows/download.yml/dispatches',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({ref:'main',inputs:{urls:url,password:pass}})
-    }).then(function(r){
-        if(r.ok){
-            result.innerHTML='✅ دانلود شروع شد! بعد چند دقیقه نتیجه رو ببین.';
-        }else{
-            result.innerHTML='❌ خطا: '+r.status;
-        }
-    }).catch(function(e){
-        result.innerHTML='❌ خطا: '+e.message;
-    });
-}
-</script>
-</body>
-</html>
-EOF
+          echo '<!DOCTYPE html>
+          <html dir="rtl">
+          <head>
+          <meta charset="UTF-8">
+          <title>Downloader</title>
+          <style>
+          body{font-family:Tahoma;background:#667eea;padding:20px}
+          .card{background:white;border-radius:20px;padding:25px;max-width:500px;margin:0 auto}
+          h1{color:#333;text-align:center}
+          input{width:100%;padding:12px;margin:10px 0;border-radius:10px;border:1px solid #ddd}
+          button{width:100%;padding:14px;background:#667eea;color:white;border:none;border-radius:10px}
+          </style>
+          </head>
+          <body>
+          <div class="card">
+          <h1>Downloader</h1>
+          <input type="text" id="url" placeholder="Enter URL">
+          <button onclick="run()">Download</button>
+          </div>
+          <script>
+          function run(){
+          var url=document.getElementById("url").value;
+          fetch("https://api.github.com/repos/sinapi1382-alt/Down-2/actions/workflows/download.yml/dispatches",{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({ref:"main",inputs:{urls:url}})
+          }).then(function(r){alert(r.ok?"Started!":"Error");});
+          }
+          </script>
+          </body>
+          </html>' > www/index.html
 
       - name: ساخت پروژه Capacitor
         run: |
