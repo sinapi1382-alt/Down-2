@@ -1,0 +1,134 @@
+name: دانلود تورنت و مگنت
+
+on:
+  workflow_dispatch:
+    inputs:
+      magnet:
+        description: 'لینک مگنت (magnet:?xt=urn:btih:...) یا فایل .torrent'
+        required: true
+        type: string
+      password:
+        description: 'رمز فایل زیپ (اختیاری)'
+        required: false
+        type: string
+
+jobs:
+  torrent:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - name: دریافت کدها
+      uses: actions/checkout@v4
+    
+    - name: نصب ابزارها
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y aria2 zip
+        
+    - name: دانلود تورنت
+      run: |
+        rm -rf torrent-downloads
+        mkdir -p torrent-downloads
+        cd torrent-downloads
+        
+        MAGNET="${{ inputs.magnet }}"
+        PASS="${{ inputs.password }}"
+        
+        echo "========================================="
+        echo "🧲 شروع دانلود تورنت"
+        echo "========================================="
+        echo "لینک: $MAGNET"
+        
+        # دانلود با aria2 (پشتیبانی از مگنت و تورنت)
+        if [[ "$MAGNET" == magnet:* ]]; then
+          aria2c --seed-time=0 --follow-torrent=mem --bt-save-metadata=true -x 16 -s 16 "$MAGNET"
+        elif [[ "$MAGNET" == *.torrent ]]; then
+          wget -O torrent.torrent "$MAGNET"
+          aria2c --seed-time=0 -x 16 -s 16 torrent.torrent
+        else
+          echo "❌ لینک معتبر نیست (باید با magnet: شروع بشه یا فایل .torrent)"
+          exit 1
+        fi
+        
+        # پیدا کردن فایل دانلود شده
+        DOWNLOADED_FILE=$(ls -1 | grep -v "\.torrent$" | head -n1)
+        
+        if [ -f "$DOWNLOADED_FILE" ]; then
+          SIZE=$(du -h "$DOWNLOADED_FILE" | cut -f1)
+          SIZE_MB=$(stat -c%s "$DOWNLOADED_FILE" | awk '{print int($1/1024/1024)}')
+          
+          echo "✅ دانلود شد: $DOWNLOADED_FILE (حجم: $SIZE)"
+          
+          # تقسیم به بخش‌های 50 مگابایتی اگه فایل بزرگ بود
+          if [ $SIZE_MB -gt 50 ]; then
+            echo "📦 فایل بزرگتر از 50 مگابایت - در حال تقسیم..."
+            if [ -n "$PASS" ]; then
+              zip -P "$PASS" -s 50m "torrent.zip" "$DOWNLOADED_FILE"
+              echo "✅ تقسیم شد: torrent.z01, torrent.z02, torrent.zip (با رمز)"
+            else
+              zip -s 50m "torrent.zip" "$DOWNLOADED_FILE"
+              echo "✅ تقسیم شد: torrent.z01, torrent.z02, torrent.zip"
+            fi
+            rm "$DOWNLOADED_FILE"
+          else
+            if [ -n "$PASS" ]; then
+              zip -P "$PASS" "torrent.zip" "$DOWNLOADED_FILE"
+              echo "✅ زیپ شد: torrent.zip (با رمز)"
+            else
+              zip "torrent.zip" "$DOWNLOADED_FILE"
+              echo "✅ زیپ شد: torrent.zip"
+            fi
+            rm "$DOWNLOADED_FILE"
+          fi
+        else
+          echo "❌ خطا در دانلود!"
+          exit 1
+        fi
+        
+        cd ..
+        
+        # ساخت فایل لیست
+        cd torrent-downloads
+        echo "=========================================" > لیست_تورنت.txt
+        echo "لیست فایل‌های دانلود شده" >> لیست_تورنت.txt
+        echo "=========================================" >> لیست_تورنت.txt
+        echo "" >> لیست_تورنت.txt
+        echo "تاریخ: $(date '+%Y-%m-%d %H:%M:%S')" >> لیست_تورنت.txt
+        echo "لینک: $MAGNET" >> لیست_تورنت.txt
+        echo "" >> لیست_تورنت.txt
+        echo "فایل‌های موجود:" >> لیست_تورنت.txt
+        echo "----------------------------------------" >> لیست_تورنت.txt
+        ls -lh >> لیست_تورنت.txt
+        echo "" >> لیست_تورنت.txt
+        if [ -n "$PASS" ]; then
+          echo "رمز فایل: $PASS" >> لیست_تورنت.txt
+        else
+          echo "رمز فایل: بدون رمز" >> لیست_تورنت.txt
+        fi
+        echo "حجم کل: $(du -sh . | cut -f1)" >> لیست_تورنت.txt
+        echo "=========================================" >> لیست_تورنت.txt
+        
+        cat لیست_تورنت.txt
+        cd ..
+        
+        # ذخیره در ریپازیتوری
+        git config user.name "github-actions[bot]"
+        git config user.email "actions@github.com"
+        git add torrent-downloads/
+        git commit -m "🧲 افزودن فایل دانلود شده از تورنت" || echo "تغییری نیست"
+        git push
+        
+        echo ""
+        echo "========================================="
+        echo "✅ دانلود تورنت کامل شد!"
+        echo "========================================="
+        ls -la torrent-downloads/
+        echo "========================================="
+    
+    - name: آپلود خروجی
+      uses: actions/upload-artifact@v4
+      with:
+        name: torrent-downloads
+        path: torrent-downloads/
