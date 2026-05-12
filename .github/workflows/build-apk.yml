@@ -1,4 +1,4 @@
-name: ساخت اپلیکیشن اندروید (APK)
+name: ساخت اپلیکیشن اندروید
 
 on:
   workflow_dispatch:
@@ -23,11 +23,29 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: نصب وابستگی‌ها
-        run: npm install
+      - name: آماده‌سازی فایل‌های وب
+        run: |
+          mkdir -p www
+          # کپی کردن فایل‌های اصلی به پوشه www
+          cp index.html www/ 2>/dev/null || echo "index.html پیدا نشد"
+          cp style.css www/ 2>/dev/null || echo "style.css پیدا نشد"
+          cp manifest.json www/ 2>/dev/null || echo "manifest.json پیدا نشد"
+          # اگه فایل دیگه‌ای داری اینجا اضافه کن
+          
+          # اگه هیچ فایلی وجود نداشت، یه فایل ساده بساز
+          if [ ! -f "www/index.html" ]; then
+            echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Downloader</title></head><body><h1>دانلودر حرفه‌ای</h1></body></html>' > www/index.html
+          fi
 
-      - name: افزودن پلتفرم اندروید
-        run: npx cap add android
+      - name: نصب Capacitor
+        run: |
+          npm init -y
+          npm install @capacitor/core @capacitor/android @capacitor/cli
+
+      - name: ساخت پروژه Capacitor
+        run: |
+          npx cap init Downloader com.downloader.app --web-dir=www
+          npx cap add android
 
       - name: ساخت APK
         run: |
@@ -35,22 +53,28 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      - name: کپی APK به پوشه مخصوص
+      - name: کپی APK به پوشه
         run: |
           mkdir -p apk-files
-          cp android/app/build/outputs/apk/debug/app-debug.apk apk-files/downloader-app.apk
-          echo "✅ APK کپی شد: apk-files/downloader-app.apk"
+          if [ -f "android/app/build/outputs/apk/debug/app-debug.apk" ]; then
+            cp android/app/build/outputs/apk/debug/app-debug.apk apk-files/downloader-app.apk
+            echo "✅ APK ساخته شد"
+          else
+            echo "❌ فایل APK پیدا نشد"
+            ls -la android/app/build/outputs/apk/debug/ || echo "پوشه apk وجود ندارد"
+            exit 1
+          fi
 
       - name: ذخیره در ریپازیتوری
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "actions@github.com"
           git add apk-files/
-          git commit -m "افزودن آخرین نسخه APK" || echo "تغییری نیست"
+          git commit -m "افزودن اپلیکیشن" || echo "تغییری نیست"
           git push
 
-      - name: آپلود (برای دسترسی سریع)
+      - name: آپلود Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: downloader-app-apk
+          name: downloader-app
           path: apk-files/downloader-app.apk
