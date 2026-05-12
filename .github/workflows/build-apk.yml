@@ -1,0 +1,56 @@
+name: ساخت اپلیکیشن اندروید (APK)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: دریافت کدها
+        uses: actions/checkout@v4
+
+      - name: نصب Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: نصب Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: نصب وابستگی‌ها
+        run: npm install
+
+      - name: افزودن پلتفرم اندروید
+        run: npx cap add android
+
+      - name: ساخت APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: کپی APK به پوشه مخصوص
+        run: |
+          mkdir -p apk-files
+          cp android/app/build/outputs/apk/debug/app-debug.apk apk-files/downloader-app.apk
+          echo "✅ APK کپی شد: apk-files/downloader-app.apk"
+
+      - name: ذخیره در ریپازیتوری
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "actions@github.com"
+          git add apk-files/
+          git commit -m "افزودن آخرین نسخه APK" || echo "تغییری نیست"
+          git push
+
+      - name: آپلود (برای دسترسی سریع)
+        uses: actions/upload-artifact@v4
+        with:
+          name: downloader-app-apk
+          path: apk-files/downloader-app.apk
