@@ -26,16 +26,36 @@ jobs:
       - name: آماده‌سازی فایل‌های وب
         run: |
           mkdir -p www
-          # کپی کردن فایل‌های اصلی به پوشه www
-          cp index.html www/ 2>/dev/null || echo "index.html پیدا نشد"
-          cp style.css www/ 2>/dev/null || echo "style.css پیدا نشد"
-          cp manifest.json www/ 2>/dev/null || echo "manifest.json پیدا نشد"
-          # اگه فایل دیگه‌ای داری اینجا اضافه کن
           
-          # اگه هیچ فایلی وجود نداشت، یه فایل ساده بساز
-          if [ ! -f "www/index.html" ]; then
-            echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Downloader</title></head><body><h1>دانلودر حرفه‌ای</h1></body></html>' > www/index.html
+          # نمایش لیست فایل‌ها برای دیباگ
+          echo "📁 فایل‌های موجود در ریشه:"
+          ls -la
+          
+          # کپی کردن index.html (اگر وجود داشته باشه)
+          if [ -f "index.html" ]; then
+            cp index.html www/
+            echo "✅ index.html کپی شد"
+          else
+            echo "❌ index.html پیدا نشد!"
+            # ساختن یک نمونه ساده
+            echo '<!DOCTYPE html>
+<html dir="rtl">
+<head><meta charset="UTF-8"><title>دانلودر</title></head>
+<body style="font-family:Tahoma;background:#667eea;text-align:center;padding:50px">
+<h1>📥 دانلودر حرفه‌ای</h1>
+<p>فایل index.html اصلی پیدا نشد</p>
+<p>لطفا فایل index.html را به ریپازیتوری اضافه کنید</p>
+</body>
+</html>' > www/index.html
           fi
+          
+          # کپی سایر فایل‌های مهم
+          cp *.css www/ 2>/dev/null || true
+          cp *.js www/ 2>/dev/null || true
+          cp *.png www/ 2>/dev/null || true
+          
+          echo "📁 محتویات پوشه www:"
+          ls -la www/
 
       - name: نصب Capacitor
         run: |
@@ -46,6 +66,12 @@ jobs:
         run: |
           npx cap init Downloader com.downloader.app --web-dir=www
           npx cap add android
+
+      - name: کپی نهایی فایل‌ها به پروژه اندروید
+        run: |
+          # اطمینان از کپی شدن فایل‌ها
+          cp -r www/* android/app/src/main/assets/public/ 2>/dev/null || true
+          cp www/index.html android/app/src/main/assets/public/ 2>/dev/null || true
 
       - name: ساخت APK
         run: |
@@ -59,9 +85,9 @@ jobs:
           if [ -f "android/app/build/outputs/apk/debug/app-debug.apk" ]; then
             cp android/app/build/outputs/apk/debug/app-debug.apk apk-files/downloader-app.apk
             echo "✅ APK ساخته شد"
+            ls -la apk-files/
           else
             echo "❌ فایل APK پیدا نشد"
-            ls -la android/app/build/outputs/apk/debug/ || echo "پوشه apk وجود ندارد"
             exit 1
           fi
 
