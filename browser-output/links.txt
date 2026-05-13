@@ -1,20 +1,15 @@
 لیست لینک‌های استخراج شده
 ========================
-تاریخ: ۱۴۰۵/۲/۲۳, ۲۳:۳۸:۰۲
-لینک اصلی: https://tpb.party/s/?q=Sofia+Lee&page=0&orderby=99
+تاریخ: ۱۴۰۵/۲/۲۳, ۲۳:۴۳:۰۰
+لینک اصلی: https://tpb.party/s/?q=Sofia+Lee+Danny+d&page=0&orderby=99
 
 فایل HTML کامل سایت: site.html
 فایل PDF صفحه: site.pdf
 اسکرین شات کامل: screenshot.png
 
-ویدیوها (2):
+ویدیوها (1):
 https://tpb.party/static/ads/728x90.html
-https://tpb.party/static/ads/728x90_bottom.html
 
-عکس‌ها (6):
+عکس‌ها (2):
 https://tpb.party/static/img/tpblogo_sm_ny.gif
-https://tpb.party/static/img/icon-magnet.gif
-https://tpb.party/static/img/vip.gif
-https://tpb.party/static/img/trusted.png
-https://tpb.party/static/img/next.gif
 https://tpb.party/static/img/rss_small.gif
