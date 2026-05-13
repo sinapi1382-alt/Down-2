@@ -44,8 +44,8 @@ jobs:
           .loading{display:inline-block;width:20px;height:20px;border:3px solid #f3f3f3;border-top:3px solid #667eea;border-radius:50%;animation:spin 1s linear infinite;margin-right:10px;vertical-align:middle}
           @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
           .footer{text-align:center;color:rgba(255,255,255,0.8);font-size:11px;margin-top:20px}
-          .tab{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:20px}
-          .tab-btn{background:#e9ecef;color:#333;flex:1;padding:10px;border:none;border-radius:10px;cursor:pointer;font-size:12px}
+          .tab{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:20px;overflow-x:auto}
+          .tab-btn{background:#e9ecef;color:#333;flex:1;padding:10px;border:none;border-radius:10px;cursor:pointer;font-size:12px;min-width:70px}
           .tab-btn.active{background:#667eea;color:white}
           .tab-content{display:none}
           .tab-content.active{display:block}
@@ -59,6 +59,9 @@ jobs:
           .section-title{background:#e9ecef;padding:8px 12px;border-radius:10px;margin:15px 0 10px 0;font-weight:bold;color:#333}
           .refresh-btn{background:#6c757d;margin-bottom:10px;padding:8px 12px;font-size:12px}
           .refresh-small{background:#6c757d;margin-right:10px;padding:5px 10px;font-size:11px;width:auto;display:inline-block}
+          .folder-buttons{display:flex;gap:10px;margin-top:15px;flex-wrap:wrap}
+          .folder-btn{background:#28a745;flex:1;padding:10px;font-size:13px;margin:0}
+          .folder-btn-blue{background:#17a2b8}
           </style>
           </head>
           <body>
@@ -71,6 +74,7 @@ jobs:
               <button class="tab-btn" onclick="showTab('browser')">🌐 مرورگر</button>
               <button class="tab-btn" onclick="showTab('search')">🔍 داک داک گو</button>
               <button class="tab-btn" onclick="showTab('video')">🎬 ویدیوها</button>
+              <button class="tab-btn" onclick="showTab('torrent')">🧲 تورنت</button>
           </div>
           
           <div id="tab-run" class="tab-content active">
@@ -79,17 +83,24 @@ jobs:
                   <option value="video">🎬 دانلود ویدیو</option>
                   <option value="browser">🌐 مرورگر خودکار</option>
                   <option value="search">🔍 جستجو در DuckDuckGo</option>
+                  <option value="torrent">🧲 دانلود تورنت / مگنت</option>
                   <option value="clean">🧹 پاکسازی پوشه</option>
               </select>
               <div id="downloadInputs"><textarea id="url" rows="2" placeholder="لینک دانلود"></textarea><input type="text" id="password" placeholder="رمز (اختیاری)"></div>
-              <div id="videoInputs" style="display:none">
-                  <textarea id="videoUrl" rows="2" placeholder="لینک ویدیو"></textarea>
-                  <input type="text" id="videoPassword" placeholder="رمز (اختیاری)">
-                  <input type="text" id="videoReferer" placeholder="Referer (لینک صفحه اصلی ویدیو - اختیاری)">
-              </div>
+              <div id="videoInputs" style="display:none"><textarea id="videoUrl" rows="2" placeholder="لینک ویدیو"></textarea><input type="text" id="videoPassword" placeholder="رمز (اختیاری)"><input type="text" id="videoReferer" placeholder="Referer (اختیاری)"></div>
               <div id="browserInputs" style="display:none"><textarea id="browserUrl" rows="2" placeholder="آدرس سایت"></textarea></div>
               <div id="searchInputs" style="display:none"><input type="text" id="searchQuery" placeholder="عبارت جستجو"><input type="number" id="searchNum" value="15" placeholder="تعداد نتایج"><select id="searchType"><option value="all">همه موارد</option><option value="videos">ویدیوها</option><option value="images">عکس‌ها</option></select></div>
+              <div id="torrentInputs" style="display:none"><textarea id="torrentUrl" rows="2" placeholder="لینک مگنت (magnet:?xt=urn:btih:...) یا فایل .torrent"></textarea><input type="text" id="torrentPassword" placeholder="رمز (اختیاری)"></div>
               <button id="runBtn">🚀 اجرا</button>
+              <div class="folder-buttons">
+                  <button id="openDownloadsBtn" class="folder-btn">📁 پوشه دانلودها</button>
+                  <button id="openVideoBtn" class="folder-btn">🎬 پوشه ویدیوها</button>
+                  <button id="openTorrentBtn" class="folder-btn">🧲 پوشه تورنت</button>
+              </div>
+              <div class="folder-buttons">
+                  <button id="openBrowserBtn" class="folder-btn folder-btn-blue">🌐 پوشه مرورگر</button>
+                  <button id="openSearchBtn" class="folder-btn folder-btn-blue">🔍 پوشه داک داک گو</button>
+              </div>
               <div id="result" class="result"></div>
           </div>
           
@@ -98,7 +109,7 @@ jobs:
           <div id="tab-downloads" class="tab-content"><button class="file-download refresh-btn" onclick="loadFiles('downloads','downloadsList')">🔄 Refresh</button><div id="downloadsList" class="file-list">Loading...</div></div>
           
           <div id="tab-browser" class="tab-content">
-              <div><button class="refresh-small" onclick="loadBrowserScreenshots()">🔄刷新 اسکرین شات</button><button class="refresh-small" onclick="loadFiles('browser-output','browserFiles')">🔄刷新 سایر فایل‌ها</button></div>
+              <div><button class="refresh-small" onclick="loadBrowserScreenshots()">🔄 اسکرین شات</button><button class="refresh-small" onclick="loadFiles('browser-output','browserFiles')">🔄 سایر فایل‌ها</button></div>
               <div class="section-title">📸 اسکرین شات‌ها</div>
               <div id="browserScreenshots" class="file-list">Loading...</div>
               <div class="section-title">📄 سایر فایل‌ها</div>
@@ -106,7 +117,7 @@ jobs:
           </div>
           
           <div id="tab-search" class="tab-content">
-              <div><button class="refresh-small" onclick="loadSearchScreenshots()">🔄刷新 اسکرین شات</button><button class="refresh-small" onclick="loadFiles('duckduckgo-results','searchFiles')">🔄刷新 سایر فایل‌ها</button></div>
+              <div><button class="refresh-small" onclick="loadSearchScreenshots()">🔄 اسکرین شات</button><button class="refresh-small" onclick="loadFiles('duckduckgo-results','searchFiles')">🔄 سایر فایل‌ها</button></div>
               <div class="section-title">📸 اسکرین شات‌ها</div>
               <div id="searchScreenshots" class="file-list">Loading...</div>
               <div class="section-title">📄 سایر فایل‌ها</div>
@@ -114,6 +125,8 @@ jobs:
           </div>
           
           <div id="tab-video" class="tab-content"><button class="file-download refresh-btn" onclick="loadFiles('video-downloads','videoList')">🔄 Refresh</button><div id="videoList" class="file-list">Loading...</div></div>
+          
+          <div id="tab-torrent" class="tab-content"><button class="file-download refresh-btn" onclick="loadFiles('torrent-downloads','torrentList')">🔄 Refresh</button><div id="torrentList" class="file-list">Loading...</div></div>
           
           </div><div class="footer">Powered by GitHub Actions</div></div>
           
@@ -126,11 +139,11 @@ jobs:
               document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
               document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
               document.getElementById('tab-'+n).classList.add('active');
-              event.target.classList.add('active');
               if(n==='downloads') loadFiles('downloads','downloadsList');
               if(n==='browser') { loadBrowserScreenshots(); loadFiles('browser-output','browserFiles'); }
               if(n==='search') { loadSearchScreenshots(); loadFiles('duckduckgo-results','searchFiles'); }
               if(n==='video') loadFiles('video-downloads','videoList');
+              if(n==='torrent') loadFiles('torrent-downloads','torrentList');
           }
           
           function showResult(t,m){const d=document.getElementById('result');d.className='result '+t;d.innerHTML=m;d.style.display='block';}
@@ -160,7 +173,7 @@ jobs:
                   });
                   if(r.ok){
                       showResult('success','✅ شروع شد!');
-                      setTimeout(()=>{loadFiles('downloads','downloadsList');loadFiles('video-downloads','videoList');loadBrowserScreenshots();loadFiles('browser-output','browserFiles');loadSearchScreenshots();loadFiles('duckduckgo-results','searchFiles');},30000);
+                      setTimeout(()=>{loadFiles('downloads','downloadsList');loadFiles('video-downloads','videoList');loadBrowserScreenshots();loadFiles('browser-output','browserFiles');loadSearchScreenshots();loadFiles('duckduckgo-results','searchFiles');loadFiles('torrent-downloads','torrentList');},30000);
                   }else showResult('error','❌ خطا: '+r.status);
               }catch(e){showResult('error','❌ خطا: '+e.message);}
           }
@@ -221,6 +234,7 @@ jobs:
               document.getElementById('videoInputs').style.display=(v==='video')?'block':'none';
               document.getElementById('browserInputs').style.display=(v==='browser')?'block':'none';
               document.getElementById('searchInputs').style.display=(v==='search')?'block':'none';
+              document.getElementById('torrentInputs').style.display=(v==='torrent')?'block':'none';
           }
           
           document.getElementById('workflowSelect').onchange=updateInputs;
@@ -250,10 +264,23 @@ jobs:
                   if(!q){alert('عبارت جستجو رو وارد کن');return;}
                   runWorkflow('duckduckgo-search.yml',{query:q,search_type:document.getElementById('searchType').value,num_results:document.getElementById('searchNum').value},'duckduckgo-results','جستجو');
               }
+              else if(s==='torrent'){
+                  const u=document.getElementById('torrentUrl').value.trim();
+                  if(!u){alert('لینک مگنت یا تورنت رو وارد کن');return;}
+                  runWorkflow('torrent-downloader.yml',{magnet:u,password:document.getElementById('torrentPassword').value},'torrent-downloads','دانلود تورنت');
+              }
               else if(s==='clean'){
                   if(confirm('پوشه downloads پاک شود؟')) runWorkflow('clean.yml',{confirm:'yes'},'downloads','پاکسازی');
               }
           };
+          
+          // دکمه‌های دسترسی مستقیم به پوشه‌ها
+          document.getElementById('openDownloadsBtn').onclick = () => window.open(`https://github.com/${REPO}/tree/main/downloads`, '_blank');
+          document.getElementById('openVideoBtn').onclick = () => window.open(`https://github.com/${REPO}/tree/main/video-downloads`, '_blank');
+          document.getElementById('openTorrentBtn').onclick = () => window.open(`https://github.com/${REPO}/tree/main/torrent-downloads`, '_blank');
+          document.getElementById('openBrowserBtn').onclick = () => window.open(`https://github.com/${REPO}/tree/main/browser-output`, '_blank');
+          document.getElementById('openSearchBtn').onclick = () => window.open(`https://github.com/${REPO}/tree/main/duckduckgo-results`, '_blank');
+          
           updateInputs();
           </script>
           </body>
@@ -282,9 +309,10 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "actions@github.com"
+          git pull origin main --rebase || true
           git add apk-files/
           git commit -m "Add app" || echo "No changes"
-          git push
+          git push origin main
           
       - name: Upload
         uses: actions/upload-artifact@v4
