@@ -2,22 +2,21 @@
 لیست فایل‌های دانلود شده
 =========================================
 
-تاریخ: 2026-05-31 21:16:10
-لینک اصلی: https://v5.cdnde.com/x5/upload_c320be7e88e22671a31d6157136a1f78/44814/44814_480p.mp4?download=joporn&key=792915174
+تاریخ: 2026-05-31 21:22:06
+لینک اصلی: https://v7.cdnde.com/x7/upload_038f1a58e1d1557aa129c187020de6ac/44393/44393_480p.mp4?download=joporn&key=459174220
 
 فایل‌های موجود:
 ----------------------------------------
-total 308M
--rw-r--r-- 1 runner runner  50M May 31 21:16 video.z01
--rw-r--r-- 1 runner runner  50M May 31 21:16 video.z02
--rw-r--r-- 1 runner runner  50M May 31 21:16 video.z03
--rw-r--r-- 1 runner runner  50M May 31 21:16 video.z04
--rw-r--r-- 1 runner runner  50M May 31 21:16 video.z05
--rw-r--r-- 1 runner runner  50M May 31 21:16 video.z06
--rw-r--r-- 1 runner runner 7.3M May 31 21:16 video.zip
--rw-r--r-- 1 runner runner  335 May 31 21:16 راهنما.txt
--rw-r--r-- 1 runner runner  370 May 31 21:16 لیست_ویدیو.txt
+total 276M
+-rw-r--r-- 1 runner runner 50M May 31 21:22 video.z01
+-rw-r--r-- 1 runner runner 50M May 31 21:22 video.z02
+-rw-r--r-- 1 runner runner 50M May 31 21:22 video.z03
+-rw-r--r-- 1 runner runner 50M May 31 21:22 video.z04
+-rw-r--r-- 1 runner runner 50M May 31 21:22 video.z05
+-rw-r--r-- 1 runner runner 26M May 31 21:22 video.zip
+-rw-r--r-- 1 runner runner 335 May 31 21:22 راهنما.txt
+-rw-r--r-- 1 runner runner 370 May 31 21:22 لیست_ویدیو.txt
 
 رمز فایل: بدون رمز
-حجم کل: 308M
+حجم کل: 276M
 =========================================
